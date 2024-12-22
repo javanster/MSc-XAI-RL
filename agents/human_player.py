@@ -18,15 +18,8 @@ class HumanPlayer:
     env : gymnasium.Env
         The Gymnasium environment where the human player will interact as the agent.
     key_action_mapping : dict
-        A dictionary mapping keyboard keys to agent actions.
+        A dictionary mapping pygame keyboard keys to agent actions.
         For example, `{pygame.K_w: 0, pygame.K_s: 1}` maps "W" and "S" keys to actions 0 and 1.
-
-    Attributes
-    ----------
-    env : gymnasium.Env
-        The Gymnasium environment instance.
-    key_action_mapping : dict
-        A dictionary defining the mapping of keyboard keys to agent actions.
 
     Methods
     -------
