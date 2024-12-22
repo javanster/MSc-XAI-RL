@@ -27,11 +27,11 @@ class HumanPlayer:
         Starts an interactive session allowing the human player to control the agent.
     """
 
-    def __init__(self, env: Env, key_action_mapping: Dict[Any, int]):
+    def __init__(self, env: Env, key_action_mapping: Dict[Any, int]) -> None:
         self.env = env
         self.key_action_mapping = key_action_mapping
 
-    def _get_human_action(self):
+    def _get_human_action(self) -> int | None:
         """
         Maps key presses to agent actions.
         Returns the action corresponding to the key pressed by the user, provided by the given
@@ -49,7 +49,7 @@ class HumanPlayer:
         default_action: int,
         timeout: int = 30,
         episodes: int = 10,
-    ):
+    ) -> None:
         """
         Allows a human player to control the agent via the keyboard in the Gymnasium environment.
 
