@@ -66,7 +66,7 @@ class FruitRun(Env):
         self,
         seed: Optional[int] = None,
         options: Optional[Dict[str, Any]] = None,
-    ):
+    ) -> Tuple[np.ndarray, Dict[Any, Any]]:
         super().reset(seed=seed)
 
         self.agent = Entity(
