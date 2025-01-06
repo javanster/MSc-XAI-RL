@@ -443,7 +443,7 @@ class DoubleDQNAgent:
     def train(
         self,
         config: ModelTrainingConfig,
-        model: Optional[Sequential] = None,
+        model: Sequential,
         use_wandb: bool = False,
         use_sweep: bool = False,
     ) -> None:
@@ -471,9 +471,8 @@ class DoubleDQNAgent:
             - `prop_steps_epsilon_decay`: Proportion of total steps over which epsilon decays.
             - `min_epsilon`: Minimum allowable epsilon value.
             - `episode_metrics_window`: Tumbling window size for reward metrics.
-        model : Optional[keras.api.models.Sequential], optional
-            A pre-defined model to use for both the online and target networks. If not provided,
-            new models will be created based on the default architecture. Defaults to None.
+        model : keras.api.models.Sequential
+            A pre-defined model to use for both the online and target networks.
         use_wandb : bool, optional
             Whether to log training progress and metrics to Weights & Biases (WandB). Defaults to False.
         use_sweep : bool, optional
