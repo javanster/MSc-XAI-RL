@@ -59,6 +59,6 @@ class ObservationNormalizationCallbacks:
         return observations / 255
 
     normalization_callbacks: Dict[str, Callable[[np.ndarray], np.ndarray]] = {
-        "default": non_normalize,
+        "no_normalization": non_normalize,
         "image": normalize_images,
     }
