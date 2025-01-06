@@ -1,62 +1,23 @@
 import os
 import random
 import time
-from typing import Any, Callable, Dict, List, Optional, Tuple, cast
+from typing import Callable, List, Optional, Tuple, cast
 
 import gymnasium as gym
 import numpy as np
 import tensorflow as tf
 from gymnasium import Env
-from keras.api.layers import Conv2D, Dense, Flatten, Input
-from keras.api.models import Sequential
-from keras.api.optimizers import Adam
+from keras.api.models import Sequential, clone_model
 from tqdm import tqdm
 
 import wandb
 
-from .utils.experience import Experience
-from .utils.observation_normalization_callbacks import ObservationNormalizationCallbacks
-from .utils.replay_buffer import ReplayBuffer
-from .utils.reward_queue import RewardQueue
-from .utils.wandb_logger import WandbLogger
-
-
-def _create_default_model(
-    input_shape: Tuple[int, ...], output_shape: int, learning_rate: float
-) -> Sequential:
-    """
-    Creates a default neural network model for the Double DQN agent.
-
-    The model consists of convolutional layers for feature extraction, followed by dense layers
-    for decision making. The output layer predicts Q-values for each possible action.
-
-    Parameters
-    ----------
-    input_shape : Tuple[int, ...]
-        The shape of the input observations (e.g., height, width, channels for images).
-    output_shape : int
-        The number of possible actions in the environment.
-    learning_rate : float
-        The learning rate for the Adam optimizer.
-
-    Returns
-    -------
-    keras.api.models.Sequential
-        The compiled neural network model.
-    """
-    model: Sequential = Sequential()
-    model.add(Input(shape=input_shape))
-    model.add(Conv2D(32, kernel_size=3, activation="relu", padding="same"))
-    model.add(Conv2D(64, kernel_size=3, activation="relu", padding="same"))
-    model.add(Flatten())
-    model.add(Dense(64, activation="relu"))
-    model.add(Dense(64, activation="relu"))
-    model.add(Dense(units=output_shape, activation="linear"))
-    model.compile(
-        loss="mse",
-        optimizer=Adam(learning_rate=learning_rate),  # type: ignore
-    )
-    return model
+from .custom_types.experience import Experience
+from .custom_types.model_training_config import ModelTrainingConfig
+from .util_classes.observation_normalization_callbacks import ObservationNormalizationCallbacks
+from .util_classes.replay_buffer import ReplayBuffer
+from .util_classes.reward_queue import RewardQueue
+from .util_classes.wandb_logger import WandbLogger
 
 
 def _update_epsilon(epsilon: float, min_epsilon: float, epsilon_decay: float) -> float:
@@ -166,41 +127,23 @@ class DoubleDQNAgent:
             )
         return ObservationNormalizationCallbacks.normalization_callbacks[normalization_type]
 
-    def _set_models(self, model: Optional[Sequential] = None, learning_rate: float = 0.001) -> None:
+    def _set_models(self, model: Sequential) -> None:
         """
-        Initializes the online and target neural network models for the agent.
-
-        If a model is provided, both the online and target models are set to the provided model.
-        Otherwise, new models are created using the default architecture with the specified learning rate.
+        Sets the online model and initializes the target model as a clone of the online model.
 
         Parameters
         ----------
-        model : Optional[keras.api.models.Sequential], optional
-            A pre-defined neural network model to use as both the online and target models.
-            If provided, new models will not be created. Defaults to None.
-        learning_rate : float, optional
-            The learning rate for the Adam optimizer when creating new models.
-            This parameter is ignored if `model` is provided. Defaults to 0.001.
+        model : keras.api.models.Sequential
+            The neural network model to be used as the online model. The target model is initialized
+            as a clone of this model.
 
         Returns
         -------
         None
         """
-        if model:
-            self.online_model: Sequential = model
-            self.target_model: Sequential = model
-            return
 
-        input_shape = self.env.observation_space.shape
-        output_shape = self.env.action_space.n
-
-        self.online_model: Sequential = _create_default_model(
-            input_shape=input_shape, output_shape=output_shape, learning_rate=learning_rate
-        )
-        self.target_model: Sequential = _create_default_model(
-            input_shape=input_shape, output_shape=output_shape, learning_rate=learning_rate
-        )
-        self.target_model.set_weights(self.online_model.get_weights())
+        self.online_model: Sequential = model
+        self.target_model: Sequential = clone_model(model)
 
     def _train_network(
         self, min_replay_buffer_size: int, minibatch_size: int, discount: float
@@ -301,7 +244,7 @@ class DoubleDQNAgent:
 
         return model_dir
 
-    def _save_training_info(self, directory_path: str, config: Dict[str, Any]) -> None:
+    def _save_training_info(self, directory_path: str, config: ModelTrainingConfig) -> None:
         """
         Saves detailed information about the training configuration and model architecture.
 
@@ -313,7 +256,7 @@ class DoubleDQNAgent:
         ----------
         directory_path : str
             The path to the directory where the `info.txt` file should be saved.
-        config : Dict[str, Any]
+        config : ModelTrainingConfig
             A dictionary containing the training configuration settings.
 
         Returns
@@ -499,7 +442,7 @@ class DoubleDQNAgent:
 
     def train(
         self,
-        config: Dict[str, Any],
+        config: ModelTrainingConfig,
         model: Optional[Sequential] = None,
         use_wandb: bool = False,
         use_sweep: bool = False,
@@ -514,7 +457,7 @@ class DoubleDQNAgent:
 
         Parameters
         ----------
-        config : Dict[str, Any]
+        config : ModelTrainingConfig
             A dictionary containing training configuration parameters. Must include:
             - `env_name`: Name of the environment.
             - `replay_buffer_size`: Maximum size of the replay buffer.
@@ -528,7 +471,6 @@ class DoubleDQNAgent:
             - `prop_steps_epsilon_decay`: Proportion of total steps over which epsilon decays.
             - `min_epsilon`: Minimum allowable epsilon value.
             - `episode_metrics_window`: Tumbling window size for reward metrics.
-            - `learning_rate`: Learning rate for the model.
         model : Optional[keras.api.models.Sequential], optional
             A pre-defined model to use for both the online and target networks. If not provided,
             new models will be created based on the default architecture. Defaults to None.
@@ -559,7 +501,6 @@ class DoubleDQNAgent:
         prop_steps_epsilon_decay: float = config["prop_steps_epsilon_decay"]
         min_epsilon: float = config["min_epsilon"]
         episode_metrics_window: int = config["episode_metrics_window"]
-        learning_rate: float = config["learning_rate"]
 
         self.replay_buffer: ReplayBuffer = ReplayBuffer(maxlen=replay_buffer_size)
         reward_queue: RewardQueue = RewardQueue(maxlen=episode_metrics_window)
@@ -574,7 +515,6 @@ class DoubleDQNAgent:
 
         self._set_models(
             model=model,
-            learning_rate=learning_rate,
         )
 
         self._save_training_info(model_dir, config)
