@@ -4,7 +4,7 @@ from keras.api.layers import Conv2D, Dense, Flatten, Input
 from keras.api.models import Sequential
 from keras.api.optimizers import Adam
 
-from agents import DoubleDQNAgent, ModelTrainingConfig
+from agents import DDQNAgent, ModelTrainingConfig
 
 if __name__ == "__main__":
     env = gym.make(id="AvocadoRun-v0")
@@ -27,7 +27,7 @@ if __name__ == "__main__":
         optimizer=Adam(learning_rate=learning_rate),  # type: ignore
     )
 
-    agent = DoubleDQNAgent(env=env, obervation_normalization_type="image")
+    agent = DDQNAgent(env=env, obervation_normalization_type="image")
 
     # Based on best hyperparams found using Bayesian Hyperparameter Optimization - See wandb sweep sandy-sweep-16
     config: ModelTrainingConfig = {

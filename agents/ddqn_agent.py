@@ -47,11 +47,11 @@ def _update_epsilon(epsilon: float, min_epsilon: float, epsilon_decay: float) ->
     return epsilon
 
 
-class DoubleDQNAgent:
+class DDQNAgent:
     """
-    A Double Deep Q-Network (Double DQN) agent for reinforcement learning.
+    A Double Deep Q-Network (DDQN) agent for reinforcement learning.
 
-    The Double DQN agent utilizes two neural networks (online and target) to stabilize
+    The DDQN agent utilizes two neural networks (online and target) to stabilize
     Q-value estimation and mitigate overestimation. It supports experience replay,
     epsilon-greedy action selection, and configurable observation normalization.
 
@@ -84,7 +84,7 @@ class DoubleDQNAgent:
         obervation_normalization_type: str = "no_normalization",
     ) -> None:
         if not isinstance(env.action_space, gym.spaces.Discrete):
-            raise ValueError("DoubleDQNAgent only supports discrete action spaces.")
+            raise ValueError("DDQNAgent only supports discrete action spaces.")
 
         self.env: Env = env
         self.normalization_callback = self._set_normalization_callback(
@@ -152,7 +152,7 @@ class DoubleDQNAgent:
         Trains the online neural network using a minibatch of experiences from the replay buffer.
 
         This method samples a random minibatch from the replay buffer, calculates target Q-values
-        using the Double DQN update rule, and updates the online model. If the replay buffer does
+        using the DDQN update rule, and updates the online model. If the replay buffer does
         not contain enough experiences, the method exits early.
 
         Parameters
@@ -448,9 +448,9 @@ class DoubleDQNAgent:
         use_sweep: bool = False,
     ) -> None:
         """
-        Trains the Double DQN agent in the specified environment.
+        Trains the DDQN agent in the specified environment.
 
-        This method trains the agent using the Double Deep Q-Network (Double DQN) algorithm.
+        This method trains the agent using the Double Deep Q-Network (DDQN) algorithm.
         It initializes the necessary components, including the replay buffer, reward tracking,
         and epsilon decay schedule. The training process is logged step-by-step and episode-by-episode,
         with optional integration into Weights & Biases (WandB) for detailed tracking.
@@ -611,7 +611,7 @@ class DoubleDQNAgent:
         self, model: Sequential, episodes: int = 10, env: Optional[Env] = None
     ) -> Tuple[List[float], int, int]:
         """
-        Tests the trained Double DQN agent in the environment.
+        Tests the trained DDQN agent in the environment.
 
         This method evaluates the agent's performance using a trained model over a specified
         number of episodes. It tracks episode rewards, terminations, and truncations. If the
