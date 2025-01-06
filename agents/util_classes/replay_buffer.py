@@ -2,7 +2,7 @@ import random
 from collections import deque
 from typing import Deque, List
 
-from .experience import Experience
+from ..custom_types.experience import Experience
 
 
 class ReplayBuffer:

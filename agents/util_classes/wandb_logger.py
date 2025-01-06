@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 import wandb
 
+from ..custom_types.model_training_config import ModelTrainingConfig
 from .reward_queue import RewardQueue
 
 
@@ -16,7 +17,7 @@ class WandbLogger:
         Whether logging is active.
     sweep_active : bool
         Whether the wandb sweep is active.
-    config : Dict[str, Any]
+    config : ModelTrainingConfig
         Configuration dictionary for wandb. Must include `project_name` if
         `sweep_active` is False.
 
@@ -29,7 +30,7 @@ class WandbLogger:
         and tumbling window metrics.
     """
 
-    def __init__(self, log_active: bool, sweep_active: bool, config: Dict[str, Any]) -> None:
+    def __init__(self, log_active: bool, sweep_active: bool, config: ModelTrainingConfig) -> None:
         self.log_active = log_active
 
         if not log_active:
