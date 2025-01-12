@@ -24,7 +24,7 @@ class ModelActivationObtainer:
             for layer_index in range(len(model.layers))
         }
 
-    def _create_activation_model(self, layer_index: int):
+    def _create_activation_model(self, layer_index: int) -> Model:
         """
         Create an intermediate model to extract activations from a specific layer.
 
@@ -43,7 +43,7 @@ class ModelActivationObtainer:
             outputs=self.model.layers[layer_index].output,  # type: ignore
         )
 
-    def get_layer_activations(self, layer_index: int, model_inputs: np.ndarray):
+    def get_layer_activations(self, layer_index: int, model_inputs: np.ndarray) -> np.ndarray:
         """
         Get the activations from a specific layer for the given inputs.
 
