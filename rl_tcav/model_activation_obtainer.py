@@ -19,7 +19,7 @@ class ModelActivationObtainer:
 
     def __init__(self, model: Sequential) -> None:
         self.model: Sequential = model
-        self.activation_models = {
+        self._activation_models = {
             layer_index: self._create_activation_model(layer_index=layer_index)
             for layer_index in range(len(model.layers))
         }
@@ -70,7 +70,7 @@ class ModelActivationObtainer:
         Conv2D layer activations are reshaped from `(batch_size, height, width, channels)`
         to `(batch_size, height * width * channels)`.
         """
-        activation_model: Model = self.activation_models[layer_index]
+        activation_model: Model = self._activation_models[layer_index]
 
         activations: np.ndarray = activation_model.predict(model_inputs)
 
