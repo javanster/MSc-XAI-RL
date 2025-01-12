@@ -154,9 +154,9 @@ class BinaryConcept:
         """
         Save positive and negative examples to disk.
 
-        This method saves the positive and negative examples in `.npy` files within
-        the specified directory. The files are named `<concept_name>_positive_examples.npy`
-        and `<concept_name>_negative_examples.npy`.
+        This method saves the positive and negative examples as `.npy` files
+        within the specified directory. The files are named
+        `<concept_name>_<num_positive/negative_examples>_positive/negative_examples.npy`.
 
         Parameters
         ----------
@@ -185,9 +185,9 @@ class BinaryConcept:
         """
         Save positive examples to disk.
 
-        This method saves the positive examples as a `.npy` file within the specified
-        directory. If there are no positive examples, a message is printed, and the
-        method exits without saving.
+        Saves the positive examples as a `.npy` file within the specified
+        directory. If there are no positive examples, the method prints a message
+        and returns without saving.
 
         Parameters
         ----------
@@ -199,7 +199,9 @@ class BinaryConcept:
             return
 
         self._ensure_save_directory_exists(directory_path=directory_path)
-        positive_file_path = f"{directory_path}/{self.name}_positive_examples.npy"
+        positive_file_path = (
+            f"{directory_path}/{self.name}_{len(self.positive_examples)}_positive_examples.npy"
+        )
         positive_array = np.array(self.positive_examples)
         np.save(positive_file_path, positive_array)
         print(f"Positive concept examples successfully saved to {positive_file_path}.")
@@ -208,9 +210,9 @@ class BinaryConcept:
         """
         Save negative examples to disk.
 
-        This method saves the negative examples as a `.npy` file within the specified
-        directory. If there are no negative examples, a message is printed, and the
-        method exits without saving.
+        Saves the negative examples as a `.npy` file within the specified
+        directory. If there are no negative examples, the method prints a message
+        and returns without saving.
 
         Parameters
         ----------
@@ -222,7 +224,9 @@ class BinaryConcept:
             return
 
         self._ensure_save_directory_exists(directory_path=directory_path)
-        negative_file_path = f"{directory_path}/{self.name}_negative_examples.npy"
+        negative_file_path = (
+            f"{directory_path}/{self.name}_{len(self.negative_examples)}_negative_examples.npy"
+        )
         negative_array = np.array(self.negative_examples)
         np.save(negative_file_path, negative_array)
         print(f"Negative concept examples successfully saved to {negative_file_path}.")
