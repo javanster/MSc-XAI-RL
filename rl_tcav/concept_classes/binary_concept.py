@@ -10,18 +10,18 @@ class BinaryConcept:
     A class to represent a binary concept with positive and negative examples.
 
     This class is designed to manage binary concepts, storing positive and
-    negative examples of observations and allowing for their retrieval and persistence.
+    negative examples of observations, and allowing for their retrieval and persistence.
 
     Parameters
     ----------
     name : str
         The name of the binary concept.
     observation_presence_callback : Optional[Callable[[Env], bool]], optional
-        A callback function that determines whether an environment observation
-        is part of the positive set or not, by default None.
-    positive_examples : Optional[List[np.ndarray]], optional
+        A callback function that determines whether an observation belongs
+        to the positive set, by default None.
+    positive_examples : List[np.ndarray], optional
         A list of positive examples of observations, by default an empty list.
-    negative_examples : Optional[List[np.ndarray]], optional
+    negative_examples : List[np.ndarray], optional
         A list of negative examples of observations, by default an empty list.
     """
 
@@ -29,19 +29,15 @@ class BinaryConcept:
         self,
         name: str,
         observation_presence_callback: Optional[Callable[[Env], bool]] = None,
-        positive_examples: Optional[List[np.ndarray]] = None,
-        negative_examples: Optional[List[np.ndarray]] = None,
+        positive_examples: List[np.ndarray] = [],
+        negative_examples: List[np.ndarray] = [],
     ) -> None:
         self.name: str = name
         self.observation_presence_callback: Callable[[Env], bool] | None = (
             observation_presence_callback
         )
-        self.positive_examples: List[np.ndarray] = (
-            positive_examples if positive_examples is not None else []
-        )
-        self.negative_examples: List[np.ndarray] = (
-            negative_examples if negative_examples is not None else []
-        )
+        self.positive_examples: List[np.ndarray] = positive_examples
+        self.negative_examples: List[np.ndarray] = negative_examples
 
     def get_name(self) -> str:
         """
@@ -156,28 +152,77 @@ class BinaryConcept:
 
     def save_examples(self, directory_path: str) -> None:
         """
-        Save positive and negative examples to disk as `.npy` files.
+        Save positive and negative examples to disk.
+
+        This method saves the positive and negative examples in `.npy` files within
+        the specified directory. The files are named `<concept_name>_positive_examples.npy`
+        and `<concept_name>_negative_examples.npy`.
 
         Parameters
         ----------
         directory_path : str
             The path to the directory where the examples will be saved.
-            Files will be named `<name>_positive_examples.npy` and `<name>_negative_examples.npy`.
+        """
+        self._save_positive_examples(directory_path=directory_path)
+        self._save_negative_examples(directory_path=directory_path)
 
-        Raises
-        ------
-        OSError
-            If the directory cannot be created or accessed.
+    def _ensure_save_directory_exists(self, directory_path: str) -> None:
+        """
+        Ensure that the save directory exists.
+
+        If the specified directory does not exist, it will be created.
+
+        Parameters
+        ----------
+        directory_path : str
+            The path to the directory to check or create.
         """
         directory = os.path.dirname(directory_path)
         if not os.path.exists(directory):
             os.makedirs(directory)
 
+    def _save_positive_examples(self, directory_path: str):
+        """
+        Save positive examples to disk.
+
+        This method saves the positive examples as a `.npy` file within the specified
+        directory. If there are no positive examples, a message is printed, and the
+        method exits without saving.
+
+        Parameters
+        ----------
+        directory_path : str
+            The path to the directory where the positive examples will be saved.
+        """
+        if len(self.positive_examples) == 0:
+            print("No positive examples to save, returning...")
+            return
+
+        self._ensure_save_directory_exists(directory_path=directory_path)
         positive_file_path = f"{directory_path}/{self.name}_positive_examples.npy"
-        negative_file_path = f"{directory_path}/{self.name}_negative_examples.npy"
-
         positive_array = np.array(self.positive_examples)
-        negative_array = np.array(self.negative_examples)
-
         np.save(positive_file_path, positive_array)
+        print(f"Positive concept examples successfully saved to {positive_file_path}.")
+
+    def _save_negative_examples(self, directory_path: str):
+        """
+        Save negative examples to disk.
+
+        This method saves the negative examples as a `.npy` file within the specified
+        directory. If there are no negative examples, a message is printed, and the
+        method exits without saving.
+
+        Parameters
+        ----------
+        directory_path : str
+            The path to the directory where the negative examples will be saved.
+        """
+        if len(self.negative_examples) == 0:
+            print("No negative examples to save, returning...")
+            return
+
+        self._ensure_save_directory_exists(directory_path=directory_path)
+        negative_file_path = f"{directory_path}/{self.name}_negative_examples.npy"
+        negative_array = np.array(self.negative_examples)
         np.save(negative_file_path, negative_array)
+        print(f"Negative concept examples successfully saved to {negative_file_path}.")
