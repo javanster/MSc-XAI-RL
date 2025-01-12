@@ -7,9 +7,10 @@ from gymnasium import Env
 
 class HumanPlayer:
     """
-    A class that enables a human player to control an agent in Gymnasium environments using a keyboard.
+    A class that enables a human player to control an agent in a custom Gymnasium environments using
+    a keyboard.
 
-    This class facilitates interaction with Gymnasium environments by mapping keyboard inputs
+    This class facilitates interaction with custom Gymnasium environments by mapping keyboard inputs
     to predefined agent actions. The player can control the agent during episodes using key presses,
     and a default action is performed if no input is received within a specified timeout period.
 
