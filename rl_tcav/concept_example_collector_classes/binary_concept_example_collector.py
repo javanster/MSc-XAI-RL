@@ -88,12 +88,6 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
         ----------
         directory_path : str
             The path to the directory where examples will be saved.
-
-        Notes
-        -----
-        Files will be named `<concept_name>_positive_examples.npy` and
-        `<concept_name>_negative_examples.npy` for each concept.
         """
         for concept in self.concepts:
             concept.save_examples(directory_path=directory_path)
-        print(f"All concept examples successfully saved to {directory_path}.")
