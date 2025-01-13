@@ -1,3 +1,4 @@
+from .cav import Cav
 from .concept_classes.binary_concept import BinaryConcept
 from .concept_example_collector_classes.binary_concept_example_collector import (
     BinaryConceptExampleCollector,
