@@ -39,17 +39,6 @@ class BinaryConcept:
         self.positive_examples: List[np.ndarray] = positive_examples
         self.negative_examples: List[np.ndarray] = negative_examples
 
-    def get_name(self) -> str:
-        """
-        Retrieve the name of the binary concept.
-
-        Returns
-        -------
-        str
-            The name of the binary concept.
-        """
-        return self.name
-
     def check_positive_presence(self, env: Env, observation: np.ndarray) -> bool:
         """
         Check if an observation belongs to the positive set and append it if so.
@@ -105,50 +94,6 @@ class BinaryConcept:
             self.negative_examples.append(observation)
             return True
         return False
-
-    def get_positive_examples(self) -> List[np.ndarray]:
-        """
-        Retrieve all positive examples.
-
-        Returns
-        -------
-        List[np.ndarray]
-            A list of all positive examples.
-        """
-        return self.positive_examples
-
-    def get_negative_examples(self) -> List[np.ndarray]:
-        """
-        Retrieve all negative examples.
-
-        Returns
-        -------
-        List[np.ndarray]
-            A list of all negative examples.
-        """
-        return self.negative_examples
-
-    def get_positive_examples_len(self) -> int:
-        """
-        Get the number of positive examples.
-
-        Returns
-        -------
-        int
-            The number of positive examples.
-        """
-        return len(self.positive_examples)
-
-    def get_negative_examples_len(self) -> int:
-        """
-        Get the number of negative examples.
-
-        Returns
-        -------
-        int
-            The number of negative examples.
-        """
-        return len(self.negative_examples)
 
     def save_examples(self, directory_path: str) -> None:
         """
