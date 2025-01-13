@@ -43,11 +43,11 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
         """
         for concept in self.concepts:
 
-            while concept.get_positive_examples_len() < example_n:
+            while len(concept.positive_examples) < example_n:
                 observation, _ = self.env.reset()
                 concept.check_positive_presence(env=self.env, observation=observation)
 
-            while concept.get_negative_examples_len() < example_n:
+            while len(concept.negative_examples) < example_n:
                 observation, _ = self.env.reset()
                 concept.check_negative_presence(env=self.env, observation=observation)
 
