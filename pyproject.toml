@@ -5,11 +5,13 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "ale-py>=0.10.1",
     "black>=24.10.0",
+    "box2d-py>=2.3.8",
     "gymnasium[other]>=1.0.0",
     "isort>=5.13.2",
     "keras>=3.7.0",
+    "minigrid>=3.0.0",
+    "miniworld>=2.1.0",
     "numpy>=2.0.2",
     "pygame>=2.6.1",
     "scikit-learn>=1.6.1",
