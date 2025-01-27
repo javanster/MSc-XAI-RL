@@ -242,9 +242,9 @@ class CarRacing(gym.Env, EzPickle):
         self.verbose = verbose
         self.new_lap = False
         self.fd_tile = fixtureDef(shape=polygonShape(vertices=[(0, 0), (1, 0), (1, -1), (0, -1)]))
+        self.break_signs = []
 
-        # This will throw a warning in tests/envs/test_envs in utils/env_checker.py as the space is not symmetric
-        #   or normalised however this is not possible here so ignore
+        # Define action and observation spaces
         if self.continuous:
             self.action_space = spaces.Box(
                 np.array([-1, 0, 0]).astype(np.float32),
@@ -319,6 +319,11 @@ class CarRacing(gym.Env, EzPickle):
             checkpoints.append((alpha, rad * math.cos(alpha), rad * math.sin(alpha)))
         self.road = []
 
+        # Initialize turn tracking variables
+        MIN_SEGMENTS_BETWEEN_TURNS = 15
+        last_turn_direction = None
+        segments_since_last_turn = 0
+
         # Go from one checkpoint to another to create track
         x, y, beta = 1.5 * TRACK_RAD, 0, 0
         dest_i = 0
@@ -367,10 +372,34 @@ class CarRacing(gym.Env, EzPickle):
                 beta += 2 * math.pi
             prev_beta = beta
             proj *= SCALE
+
+            desired_turn = None
             if proj > 0.3:
+                desired_turn = "left"  # Decrease beta for left turn
+            elif proj < -0.3:
+                desired_turn = "right"  # Increase beta for right turn
+
+            # Check if the desired turn is opposite to the last turn and if the minimum distance is met
+            if desired_turn:
+                if last_turn_direction and desired_turn != last_turn_direction:
+                    if segments_since_last_turn < MIN_SEGMENTS_BETWEEN_TURNS:
+                        # Disallow turn to avoid immediate opposite turn
+                        desired_turn = None
+
+            # Apply orientation adjustment based on the allowed turn
+            if desired_turn == "left":
                 beta -= min(TRACK_TURN_RATE, abs(0.001 * proj))
-            if proj < -0.3:
+                last_turn_direction = "left"
+                segments_since_last_turn = 0  # Reset counter after a turn
+            elif desired_turn == "right":
                 beta += min(TRACK_TURN_RATE, abs(0.001 * proj))
+                last_turn_direction = "right"
+                segments_since_last_turn = 0  # Reset counter after a turn
+            else:
+                # No turn; increment the segments_since_last_turn counter
+                segments_since_last_turn += 1
+
+            # Continue with position update
             x += p1x * TRACK_DETAIL_STEP
             y += p1y * TRACK_DETAIL_STEP
             track.append((alpha, prev_beta * 0.5 + beta * 0.5, x, y))
@@ -428,6 +457,24 @@ class CarRacing(gym.Env, EzPickle):
         for i in range(len(track)):
             for neg in range(BORDER_MIN_COUNT):
                 border[i - neg] |= border[i]
+
+        # **Store break signs to draw 10, 9, and 8 Segments Before Sharp Turns**
+        self.break_signs = []  # Reset the list for the new track
+        last_object_index = -15  # Initialize to a value ensuring the first set can be placed
+
+        for i in range(len(border)):
+            # Detect the start of a sharp turn
+            if border[i] and (i == 0 or not border[i - 1]):
+                # Positions 10, 9, and 8 segments before the turn
+                segments_before = [10, 9, 8]
+                for seg in segments_before:
+                    j = i - seg
+                    if j >= 0 and (j > last_object_index + 10):
+                        obj_alpha, obj_beta, obj_x, obj_y = track[j]
+                        self.break_signs.append((obj_x, obj_y, obj_beta))
+                        if self.verbose:
+                            print(f"Added object at segment {j}: ({obj_x}, {obj_y})")
+                last_object_index = i - 8  # Update to the closest segment to prevent overlap
 
         # Create tiles
         for i in range(len(track)):
@@ -520,6 +567,7 @@ class CarRacing(gym.Env, EzPickle):
                         (255, 255, 255) if i % 2 == 0 else (255, 0, 0),
                     )
                 )
+
         self.track = track
         return True
 
@@ -569,10 +617,11 @@ class CarRacing(gym.Env, EzPickle):
         assert self.car is not None
         if action is not None:
             if self.continuous:
+                braking_scale = 0.3  # The lower the scale, the lower the effect of braking
                 action = action.astype(np.float64)  # type: ignore
                 self.car.steer(-action[0])
                 self.car.gas(action[1])
-                self.car.brake(action[2])
+                self.car.brake(action[2] * braking_scale)
             else:
                 if not self.action_space.contains(action):
                     raise InvalidAction(
@@ -581,7 +630,7 @@ class CarRacing(gym.Env, EzPickle):
                     )
                 self.car.steer(-0.6 * (action == 1) + 0.6 * (action == 2))
                 self.car.gas(0.2 * (action == 3))
-                self.car.brake(0.8 * (action == 4))
+                self.car.brake(0.4 * (action == 4))  # Reduced braking effectiveness
 
         self.car.step(1.0 / FPS)
         self.world.Step(1.0 / FPS, 6 * 30, 2 * 30)
@@ -695,12 +744,12 @@ class CarRacing(gym.Env, EzPickle):
             (-bounds, bounds),
         ]
 
-        # draw background
+        # Draw background
         self._draw_colored_polygon(
             self.surf, field, self.bg_color, zoom, translation, angle, clip=False
         )
 
-        # draw grass patches
+        # Draw grass patches
         grass = []
         for x in range(-20, 20, 2):
             for y in range(-20, 20, 2):
@@ -715,12 +764,45 @@ class CarRacing(gym.Env, EzPickle):
         for poly in grass:
             self._draw_colored_polygon(self.surf, poly, self.grass_color, zoom, translation, angle)
 
-        # draw road
+        # Draw road
         for poly, color in self.road_poly:
-            # converting to pixel coordinates
+            # Converting to pixel coordinates
             poly = [(p[0], p[1]) for p in poly]
             color = [int(c) for c in color]
             self._draw_colored_polygon(self.surf, poly, color, zoom, translation, angle)
+
+        # Draw break signs 10, 9, and 8 segments before sharp turns**
+        for obj_x, obj_y, obj_beta in self.break_signs:
+            size = 10 / SCALE
+            triangle = [
+                (obj_x, obj_y + size),
+                (obj_x - size, obj_y - size),
+                (obj_x + size, obj_y - size),
+            ]
+
+            rotated_triangle = []
+            for point in triangle:
+                # Translate point to origin
+                translated_x = point[0] - obj_x
+                translated_y = point[1] - obj_y
+                # Apply rotation
+                rotated_x = translated_x * math.cos(obj_beta) - translated_y * math.sin(obj_beta)
+                rotated_y = translated_x * math.sin(obj_beta) + translated_y * math.cos(obj_beta)
+                # Translate back
+                final_x = rotated_x + obj_x
+                final_y = rotated_y + obj_y
+                rotated_triangle.append((final_x, final_y))
+
+            # Draw the triangle
+            self._draw_colored_polygon(
+                self.surf,
+                rotated_triangle,
+                color=(255, 165, 0),  # Orange color
+                zoom=zoom,
+                translation=translation,
+                angle=angle,
+                clip=True,
+            )
 
     def _render_indicators(self, W, H):
         s = W / 40.0
