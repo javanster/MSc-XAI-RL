@@ -5,8 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "avocado-run",
     "black>=24.10.0",
     "box2d-py>=2.3.8",
+    "ccr",
     "gymnasium[other]>=1.0.0",
     "isort>=5.13.2",
     "keras>=3.7.0",
@@ -28,3 +30,7 @@ target-version = ['py311']
 [tool.isort]
 profile = "black"
 line_length = 100
+
+[tool.uv.sources]
+avocado-run = { path = "environments/avocado_run" }
+ccr = { path = "environments/ccr" }

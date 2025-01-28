@@ -50,6 +50,25 @@ wheels = [
 ]
 
 [[package]]
+name = "avocado-run"
+version = "0.0.1"
+source = { directory = "environments/avocado_run" }
+dependencies = [
+    { name = "gymnasium" },
+    { name = "importlib" },
+    { name = "numpy" },
+    { name = "pygame" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "gymnasium" },
+    { name = "importlib" },
+    { name = "numpy" },
+    { name = "pygame" },
+]
+
+[[package]]
 name = "black"
 version = "24.10.0"
 source = { registry = "https://pypi.org/simple" }
@@ -82,6 +101,25 @@ name = "box2d-py"
 version = "2.3.8"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/98/c2/ab05b5329dc4416b5ee5530f0625a79c394a3e3c10abe0812b9345256451/box2d-py-2.3.8.tar.gz", hash = "sha256:bdacfbbc56079bb317548efe49d3d5a86646885cc27f4a2ee97e4b2960921ab7", size = 374458 }
+
+[[package]]
+name = "ccr"
+version = "5.0.0"
+source = { directory = "environments/ccr" }
+dependencies = [
+    { name = "gymnasium" },
+    { name = "importlib" },
+    { name = "numpy" },
+    { name = "pygame" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "gymnasium" },
+    { name = "importlib" },
+    { name = "numpy" },
+    { name = "pygame" },
+]
 
 [[package]]
 name = "certifi"
@@ -473,6 +511,12 @@ wheels = [
 ]
 
 [[package]]
+name = "importlib"
+version = "1.0.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/31/77/3781f65cafe55480b56914def99022a5d2965a4bb269655c89ef2f1de3cd/importlib-1.0.4.zip", hash = "sha256:b6ee7066fea66e35f8d0acee24d98006de1a0a8a94a8ce6efe73a9a23c8d9826", size = 7074 }
+
+[[package]]
 name = "isort"
 version = "5.13.2"
 source = { registry = "https://pypi.org/simple" }
@@ -783,8 +827,10 @@ name = "msc-xai-rl"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "avocado-run" },
     { name = "black" },
     { name = "box2d-py" },
+    { name = "ccr" },
     { name = "gymnasium", extra = ["other"] },
     { name = "isort" },
     { name = "keras" },
@@ -801,8 +847,10 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "avocado-run", directory = "environments/avocado_run" },
     { name = "black", specifier = ">=24.10.0" },
     { name = "box2d-py", specifier = ">=2.3.8" },
+    { name = "ccr", directory = "environments/ccr" },
     { name = "gymnasium", extras = ["other"], specifier = ">=1.0.0" },
     { name = "isort", specifier = ">=5.13.2" },
     { name = "keras", specifier = ">=3.7.0" },
