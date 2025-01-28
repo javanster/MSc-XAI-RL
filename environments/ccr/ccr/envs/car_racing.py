@@ -781,19 +781,26 @@ class CarRacing(gym.Env, EzPickle):
             ]
 
             rotated_triangle = []
+
+            # Calculate the new rotation angle by adding π radians (180 degrees)
+            rot_angle = obj_beta + math.pi
+
+            # Optional: Normalize the angle to [0, 2π) for consistency
+            rot_angle = rot_angle % (2 * math.pi)
+
             for point in triangle:
                 # Translate point to origin
                 translated_x = point[0] - obj_x
                 translated_y = point[1] - obj_y
-                # Apply rotation
-                rotated_x = translated_x * math.cos(obj_beta) - translated_y * math.sin(obj_beta)
-                rotated_y = translated_x * math.sin(obj_beta) + translated_y * math.cos(obj_beta)
-                # Translate back
+                # Apply rotation by rot_angle (obj_beta + π)
+                rotated_x = translated_x * math.cos(rot_angle) - translated_y * math.sin(rot_angle)
+                rotated_y = translated_x * math.sin(rot_angle) + translated_y * math.cos(rot_angle)
+                # Translate back to original position
                 final_x = rotated_x + obj_x
                 final_y = rotated_y + obj_y
                 rotated_triangle.append((final_x, final_y))
 
-            # Draw the triangle
+            # Draw the rotated triangle
             self._draw_colored_polygon(
                 self.surf,
                 rotated_triangle,
