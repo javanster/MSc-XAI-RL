@@ -4,5 +4,5 @@ To install, run:
 
 ```
 cd environments/avocado_run
-uv pip install -e .
+uv add .
 ```
