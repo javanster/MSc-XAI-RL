@@ -135,7 +135,7 @@ class TrajectoryBuffer:
         - This implementation leverages `scipy.signal.lfilter` for efficient computation without explicit loops.
         - Ensure that the input `sequence` does not contain NaN or infinite values to prevent unexpected behavior.
         """
-        if not not (0.0 <= discount <= 1.0):
+        if not (0.0 <= discount <= 1.0):
             raise ValueError('"discount" must be a float between 0 and 1.')
 
         return scipy.signal.lfilter([1], [1, float(-discount)], sequence[::-1], axis=0)[::-1]
