@@ -17,6 +17,9 @@ class GemCollector(Env):
     """
     A Gymnasium environment for the Gem Collector game, where an agent collects gems while avoiding obstacles.
 
+    GemCollector has exactly one unique optimal policy, consisting of continuously traversing the full length of
+    the environment back and forth, thereby collecting every aquamarine and amethyst.
+
     Attributes
     ----------
     metadata : dict
