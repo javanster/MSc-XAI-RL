@@ -36,5 +36,5 @@ class Miner(Entity):
             starting_position=starting_position,
         )
 
-        self.is_moving_left = is_moving_left
+        self.is_moving_left: bool = is_moving_left
         self.obj_drop_x_coordinates: Dict[int, str] = {}
