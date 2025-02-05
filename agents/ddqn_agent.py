@@ -8,6 +8,7 @@ import numpy as np
 import tensorflow as tf
 from gymnasium import Env
 from keras.api.models import Sequential, clone_model
+from keras.api.optimizers import Adam
 from tqdm import tqdm
 
 import wandb
@@ -127,7 +128,7 @@ class DDQNAgent:
             )
         return ObservationNormalizationCallbacks.normalization_callbacks[normalization_type]
 
-    def _set_models(self, model: Sequential) -> None:
+    def _set_models(self, model: Sequential, learning_rate: float | None = None) -> None:
         """
         Sets the online model and initializes the target model as a clone of the online model.
 
@@ -141,6 +142,14 @@ class DDQNAgent:
         -------
         None
         """
+        if learning_rate:
+            if getattr(model, "optimizer", None) is not None:
+                raise ValueError("The provided model is already compiled.")
+
+            model.compile(
+                loss="mse",
+                optimizer=Adam(learning_rate=learning_rate),  # type: ignore
+            )
 
         self.online_model: Sequential = model
         self.target_model: Sequential = clone_model(model)
@@ -235,7 +244,7 @@ class DDQNAgent:
             os.makedirs("models")
 
         model_dir: str = (
-            f"models/{env_name}/{wandb.run.name}"
+            f"models/{env_name}/{wandb.run.name}"  # type: ignore
             if use_wandb
             else f"models/{env_name}/run_{int(time.time())}"
         )
@@ -442,7 +451,7 @@ class DDQNAgent:
 
     def train(
         self,
-        config: ModelTrainingConfig,
+        config: ModelTrainingConfig | None,
         model: Sequential,
         use_wandb: bool = False,
         use_sweep: bool = False,
@@ -485,7 +494,12 @@ class DDQNAgent:
 
         wandbLogger = WandbLogger(log_active=use_wandb, sweep_active=use_sweep, config=config)
         if use_wandb:
-            config = wandb.config
+            config = wandb.config  # type: ignore
+
+        if not config:
+            raise ValueError(
+                "No active config. Either no config was given as an argument, or, if 'use_wandb' was given as True, wandb failed to retreive the config."
+            )
 
         env_name: str = config["env_name"]
         replay_buffer_size: int = config["replay_buffer_size"]
@@ -500,6 +514,7 @@ class DDQNAgent:
         prop_steps_epsilon_decay: float = config["prop_steps_epsilon_decay"]
         min_epsilon: float = config["min_epsilon"]
         episode_metrics_window: int = config["episode_metrics_window"]
+        learning_rate: float = config["learning_rate"]
 
         self.replay_buffer: ReplayBuffer = ReplayBuffer(maxlen=replay_buffer_size)
         reward_queue: RewardQueue = RewardQueue(maxlen=episode_metrics_window)
@@ -512,9 +527,7 @@ class DDQNAgent:
         min_reward = None
         model_dir = self._ensure_and_get_model_dir_path(env_name=env_name, use_wandb=use_wandb)
 
-        self._set_models(
-            model=model,
-        )
+        self._set_models(model=model, learning_rate=learning_rate)
 
         self._save_training_info(model_dir, config)
 
