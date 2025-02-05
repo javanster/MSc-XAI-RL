@@ -520,7 +520,6 @@ class GemCollector(Env):
             obj_list = self.obj_lists[obj_type]
             for obj in obj_list[:]:
                 if obj == self.agent:
-                    obj_list.remove(obj)
                     reward += self.rewards[obj_type]
                     if obj_type == "rock":
                         self.active_agent_sprite = 1
@@ -529,6 +528,7 @@ class GemCollector(Env):
                         break
                     else:
                         self.active_agent_sprite = 2
+                    obj_list.remove(obj)
         return reward, terminated
 
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, bool, Dict[Any, Any]]:
