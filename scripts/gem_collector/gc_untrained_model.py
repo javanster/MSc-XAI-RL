@@ -6,7 +6,7 @@ from keras.api.models import Sequential
 
 def get_gc_untrained_model():
     """
-    Creates and returns an untrained convolutional neural network (CNN) model
+    Creates and returns an untrained and uncompiled convolutional neural network (CNN) model
     for the GemCollector environment.
 
     Returns
