@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import numpy as np
 
@@ -15,10 +15,15 @@ class Entity:
         The y-coordinate of the entity in the grid.
     grid_side_length : int
         The size of one side of the square grid environment.
+    color : Tuple[int, int, int]
+        The RGB color of the entity.
     """
 
     def __init__(
-        self, grid_side_length: int, starting_position: Optional[Tuple[int, int]] = None
+        self,
+        grid_side_length: int,
+        color: Tuple[int, int, int],
+        starting_position: Optional[Tuple[int, int]] = None,
     ) -> None:
         if starting_position and any(
             starting_coord >= grid_side_length or starting_coord < 0
@@ -34,6 +39,7 @@ class Entity:
             self.x = np.random.randint(0, grid_side_length)
             self.y = np.random.randint(0, grid_side_length)
         self.grid_side_length = grid_side_length
+        self.color = color
 
     def __eq__(self, other: object) -> bool:
         """
