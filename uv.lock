@@ -356,6 +356,25 @@ wheels = [
 ]
 
 [[package]]
+name = "gem-collector"
+version = "3.0.1"
+source = { directory = "environments/gem_collector" }
+dependencies = [
+    { name = "gymnasium" },
+    { name = "importlib" },
+    { name = "numpy" },
+    { name = "pygame" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "gymnasium" },
+    { name = "importlib" },
+    { name = "numpy" },
+    { name = "pygame" },
+]
+
+[[package]]
 name = "gitdb"
 version = "4.0.12"
 source = { registry = "https://pypi.org/simple" }
@@ -831,6 +850,7 @@ dependencies = [
     { name = "black" },
     { name = "box2d-py" },
     { name = "ccr" },
+    { name = "gem-collector" },
     { name = "gymnasium", extra = ["other"] },
     { name = "isort" },
     { name = "keras" },
@@ -851,6 +871,7 @@ requires-dist = [
     { name = "black", specifier = ">=24.10.0" },
     { name = "box2d-py", specifier = ">=2.3.8" },
     { name = "ccr", directory = "environments/ccr" },
+    { name = "gem-collector", directory = "environments/gem_collector" },
     { name = "gymnasium", extras = ["other"], specifier = ">=1.0.0" },
     { name = "isort", specifier = ">=5.13.2" },
     { name = "keras", specifier = ">=3.7.0" },

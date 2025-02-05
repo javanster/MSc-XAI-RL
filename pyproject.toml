@@ -9,6 +9,7 @@ dependencies = [
     "black>=24.10.0",
     "box2d-py>=2.3.8",
     "ccr",
+    "gem-collector",
     "gymnasium[other]>=1.0.0",
     "isort>=5.13.2",
     "keras>=3.7.0",
@@ -34,3 +35,4 @@ line_length = 100
 [tool.uv.sources]
 avocado-run = { path = "environments/avocado_run" }
 ccr = { path = "environments/ccr" }
+gem-collector = { path = "environments/gem_collector" }
