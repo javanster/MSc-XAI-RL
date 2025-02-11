@@ -97,6 +97,27 @@ wheels = [
 ]
 
 [[package]]
+name = "box-escape"
+version = "1.0.1"
+source = { directory = "environments/box_escape" }
+dependencies = [
+    { name = "gymnasium" },
+    { name = "importlib" },
+    { name = "minigrid" },
+    { name = "numpy" },
+    { name = "pygame" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "gymnasium" },
+    { name = "importlib" },
+    { name = "minigrid" },
+    { name = "numpy" },
+    { name = "pygame" },
+]
+
+[[package]]
 name = "box2d-py"
 version = "2.3.8"
 source = { registry = "https://pypi.org/simple" }
@@ -848,6 +869,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "avocado-run" },
     { name = "black" },
+    { name = "box-escape" },
     { name = "box2d-py" },
     { name = "ccr" },
     { name = "gem-collector" },
@@ -869,6 +891,7 @@ dependencies = [
 requires-dist = [
     { name = "avocado-run", directory = "environments/avocado_run" },
     { name = "black", specifier = ">=24.10.0" },
+    { name = "box-escape", directory = "environments/box_escape" },
     { name = "box2d-py", specifier = ">=2.3.8" },
     { name = "ccr", directory = "environments/ccr" },
     { name = "gem-collector", directory = "environments/gem_collector" },

@@ -7,6 +7,7 @@ requires-python = ">=3.11"
 dependencies = [
     "avocado-run",
     "black>=24.10.0",
+    "box-escape",
     "box2d-py>=2.3.8",
     "ccr",
     "gem-collector",
@@ -36,3 +37,4 @@ line_length = 100
 avocado-run = { path = "environments/avocado_run" }
 ccr = { path = "environments/ccr" }
 gem-collector = { path = "environments/gem_collector" }
+box-escape = { path = "environments/box_escape" }
