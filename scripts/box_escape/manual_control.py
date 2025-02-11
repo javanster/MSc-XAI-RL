@@ -35,7 +35,6 @@ class CustomManualControl(ManualControl):
             "right": Actions.right,
             "up": Actions.forward,
             "tab": Actions.pickup,
-            "left shift": Actions.drop,
             "space": Actions.toggle,
         }
         if key in key_to_action.keys():
