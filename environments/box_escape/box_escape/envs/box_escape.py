@@ -88,10 +88,10 @@ class BoxEscape(MiniGridEnv):
     }
     VALID_OBJ_COLOR_INDEXES: List[int] = [0, 1, 3, 4, 5]  # Not including 2, which is gray
     GOAL_POS_MAP: Dict[Tuple[int, int], int] = {
-        (9, 1): 1,
-        (17, 9): 2,
-        (9, 17): 3,
-        (1, 9): 4,
+        (7, 1): 1,
+        (13, 7): 2,
+        (7, 13): 3,
+        (1, 7): 4,
     }
     MAX_STEPS: int = 200
 
@@ -107,7 +107,7 @@ class BoxEscape(MiniGridEnv):
     ):
 
         mission_space: MissionSpace = MissionSpace(mission_func=self._gen_mission)
-        self.size: int = 19
+        self.size: int = 15
         self.fully_observable: bool = fully_observable
         self._validate_rewards(rewards)
         self.rewards: Dict[str, float] = rewards
@@ -230,10 +230,10 @@ class BoxEscape(MiniGridEnv):
                 placed_boxes.append(next_box_pos)
 
     def _place_number_tiles(self) -> None:
-        self.grid.set(9, 0, NumberTile(color="blue"))
-        self.grid.set(18, 9, NumberTile(color="red"))
-        self.grid.set(9, 18, NumberTile(color="green"))
-        self.grid.set(0, 9, NumberTile(color="yellow"))
+        self.grid.set(7, 0, NumberTile(color="blue"))
+        self.grid.set(14, 7, NumberTile(color="red"))
+        self.grid.set(7, 14, NumberTile(color="green"))
+        self.grid.set(0, 7, NumberTile(color="yellow"))
 
     def _gen_grid(self, width, height):
         self.chosen_color_i: int = random.choice(
