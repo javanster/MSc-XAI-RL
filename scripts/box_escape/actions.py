@@ -5,18 +5,23 @@ class Actions(IntEnum):
     """
     The possible actions in the BoxEscape environment.
 
-    Actions correspond to discrete movements and interactions that the agent
-    can perform within the environment:
+    These actions define the discrete movement and interaction capabilities of
+    the agent as it navigates the environment.
 
-    - `left (0)`: Rotate the agent 90 degrees to the left.
-    - `right (1)`: Rotate the agent 90 degrees to the right.
-    - `forward (2)`: Move the agent one step forward in the direction it is facing.
-    - `pickup (3)`: Pick up an object (such as a key or a box) if the agent is facing it.
-    - `drop (4)`: Drop the currently held object at the agent's current position.
-    - `toggle (5)`: Toggle/interact with an object, such as opening a door or activating a switch.
-
-    These actions allow the agent to navigate and interact with the environment
-    to solve puzzles, unlock paths, and reach the goal.
+    Attributes
+    ----------
+    left : int
+        Rotate the agent 90 degrees to the left.
+    right : int
+        Rotate the agent 90 degrees to the right.
+    forward : int
+        Move the agent one step forward in the direction it is facing.
+    pickup : int
+        Pick up an object (such as a key or a box) if the agent is facing it.
+    drop : int
+        Drop the currently held object at the agent's current position.
+    toggle : int
+        Toggle or interact with an object, such as opening a door or activating a switch.
     """
 
     left = 0
