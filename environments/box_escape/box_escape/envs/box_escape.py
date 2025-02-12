@@ -7,10 +7,11 @@ from gymnasium.core import ActType, ObsType
 from minigrid.core.constants import COLOR_NAMES
 from minigrid.core.grid import Grid
 from minigrid.core.mission import MissionSpace
-from minigrid.core.world_object import Box, Door, Goal, Key, Wall
+from minigrid.core.world_object import Door, Goal, Key, Wall
 from minigrid.minigrid_env import MiniGridEnv
 
 from .actions import Actions
+from .box import Box
 from .number_tile import NumberTile
 from .static_obj_map import STATIC_OBJ_MAP
 
@@ -262,7 +263,7 @@ class BoxEscape(MiniGridEnv):
 
         grid = self.grid.slice(topX, topY, agent_view_size, agent_view_size)
 
-        for i in range(self.agent_dir + 1):
+        for _ in range(self.agent_dir + 1):
             grid = grid.rotate_left()
 
         # Makes the mask transparent, since it is not needed in the observations of the entire env
