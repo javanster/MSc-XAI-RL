@@ -8,6 +8,7 @@ dependencies = [
     "avocado-run",
     "black>=24.10.0",
     "box-escape",
+    "box-escape-lite",
     "box2d-py>=2.3.8",
     "ccr",
     "gem-collector",
@@ -38,3 +39,4 @@ avocado-run = { path = "environments/avocado_run" }
 ccr = { path = "environments/ccr" }
 gem-collector = { path = "environments/gem_collector" }
 box-escape = { path = "environments/box_escape" }
+box-escape-lite = { path = "environments/box_escape_lite" }
