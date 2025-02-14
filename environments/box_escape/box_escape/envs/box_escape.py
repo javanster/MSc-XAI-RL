@@ -35,57 +35,45 @@ class BoxEscape(MiniGridEnv):
     - Rotating left or right
     - Picking up and dropping objects
     - Toggling/interacting with doors
-
-    The **reward function** is structured as follows:
-    - A reward is given for picking up the key.
-    - A higher reward is given for reaching the correct goal.
-    - A lower reward is given for reaching an incorrect goal.
-    - The sum of `"key_pickup"` and `"correct_goal_reached"` must always be `1.0`.
-
-    The environment is dynamically generated based on a predefined **static object map**,
-    ensuring structured levels while maintaining some randomness in object placement.
-
-    Parameters
-    ----------
-    rewards : dict of str to float, optional
-        A dictionary specifying reward values for:
-        - "key_pickup": Reward for picking up the key.
-        - "correct_goal_reached": Reward for entering the correct door.
-        - "incorrect_goal_reached": Reward for entering an incorrect door.
-        The dictionary must contain exactly these keys with valid values.
-    fully_observable : bool, optional
-        If True, the agent receives full environment observations instead of partial views.
-    **kwargs : dict
-        Additional arguments passed to the MiniGridEnv constructor.
-
-    Attributes
-    ----------
-    REQUIRED_REWARD_KEYS : set of str
-        The required keys for the rewards dictionary.
-    VALID_OBJ_COLOR_INDEXES : list of int
-        List of valid object color indices, excluding gray.
-    GOAL_POS_MAP : dict of tuple to int
-        Mapping of goal positions to target directions.
-    MAX_STEPS : int
-        The maximum number of steps allowed per episode.
-    size : int
-        The size of the grid (default is 19x19).
-    fully_observable : bool
-        Whether the environment is fully observable.
-    rewards : dict of str to float
-        Stores the reward values for various actions.
-    static_obj_map : list of list of int
-        Stores a predefined static object map for level generation.
-    actions : Actions
-        Enum representing the possible actions the agent can take.
-    action_space : gymnasium.spaces.Discrete
-        The discrete action space for the environment.
     """
 
-    REQUIRED_REWARD_KEYS: Set[str] = {
-        "key_pickup",
-        "correct_goal_reached",
-        "incorrect_goal_reached",
+    # Rewards so that for each curriculum level, the episode reward range is [-1,1]
+    # Max steps = 200, so 200 * -0.005 = -1
+    # Min steps to collect key = 1 (for all types of env instances)
+    # Min steps to collect key, unlock door and go to goal = 6 (for all types of env instances)
+    REWARDS: Dict[int, Dict[str, float]] = {
+        1: {
+            "key_pickup": 1.001,
+            "pickup_penalty": -0.004,
+            "toggle_penalty": -0.004,
+            "correct_goal_reached": 0,
+            "incorrect_goal_reached": 0,
+            "step_penalty": -0.001,
+        },
+        2: {
+            "key_pickup": 1.001,
+            "pickup_penalty": -0.004,
+            "toggle_penalty": -0.004,
+            "correct_goal_reached": 0,
+            "incorrect_goal_reached": 0,
+            "step_penalty": -0.001,
+        },
+        3: {
+            "key_pickup": 0.3,
+            "pickup_penalty": -0.004,
+            "toggle_penalty": -0.004,
+            "correct_goal_reached": 0.706,
+            "incorrect_goal_reached": 0.706,
+            "step_penalty": -0.001,
+        },
+        4: {
+            "key_pickup": 0.2,
+            "pickup_penalty": -0.004,
+            "toggle_penalty": -0.004,
+            "correct_goal_reached": 0.806,
+            "incorrect_goal_reached": 0,
+            "step_penalty": -0.001,
+        },
     }
     VALID_OBJ_COLOR_INDEXES: List[int] = [0, 1, 3, 4, 5]  # Not including 2, which is gray
     GOAL_POS_MAP: Dict[Tuple[int, int], int] = {
@@ -95,23 +83,25 @@ class BoxEscape(MiniGridEnv):
         (1, 7): 4,
     }
     MAX_STEPS: int = 200
+    VALID_CURRICULUM_LEVELS = [1, 2, 3, 4]
 
     def __init__(
         self,
-        rewards: Dict[str, float] = {
-            "key_pickup": 0.2,
-            "correct_goal_reached": 0.8,
-            "incorrect_goal_reached": 0.4,
-        },
         fully_observable: bool = True,
+        curriculum_level: int = 4,
         **kwargs,
     ):
 
         mission_space: MissionSpace = MissionSpace(mission_func=self._gen_mission)
         self.size: int = 15
         self.fully_observable: bool = fully_observable
-        self._validate_rewards(rewards)
-        self.rewards: Dict[str, float] = rewards
+
+        if curriculum_level not in self.VALID_CURRICULUM_LEVELS:
+            raise ValueError(
+                f"Invalid curriculum level. Must be one of {self.VALID_CURRICULUM_LEVELS}"
+            )
+
+        self.curriculum_level = curriculum_level
 
         super().__init__(
             mission_space=mission_space,
@@ -124,54 +114,11 @@ class BoxEscape(MiniGridEnv):
         self.actions: Type[Actions] = Actions
         self.action_space: spaces.Discrete = spaces.Discrete(len(self.actions))
 
-    def _validate_rewards(self, rewards: Dict[str, float]) -> None:
-        """
-        Validates the rewards dictionary to ensure it has the correct keys,
-        non-negative values, and proper sum relationships.
-
-        Parameters
-        ----------
-        rewards : dict of str to float
-            The rewards dictionary to validate. It must contain the exact keys:
-            - "key_pickup"
-            - "correct_goal_reached"
-            - "incorrect_goal_reached"
-
-        Raises
-        ------
-        ValueError
-            If any required keys are missing or if extra keys are present.
-        ValueError
-            If any reward value is negative.
-        ValueError
-            If the sum of "key_pickup" and "correct_goal_reached" is not equal to 1.
-        ValueError
-            If "incorrect_goal_reached" is greater than or equal to "correct_goal_reached".
-        """
-        if set(rewards.keys()) != self.REQUIRED_REWARD_KEYS:
-            raise ValueError(
-                f"Invalid rewards dictionary. Expected keys: {self.REQUIRED_REWARD_KEYS}, "
-                f"but got {set(rewards.keys())}"
-            )
-        for reward in rewards.values():
-            if reward < 0:
-                raise ValueError("No given reward can be negative")
-
-        if rewards["key_pickup"] + rewards["correct_goal_reached"] != 1:
-            raise ValueError(
-                "The sum of rewards 'key_pickup' and 'correct_goal_reached' must equal 1"
-            )
-
-        if rewards["incorrect_goal_reached"] >= rewards["correct_goal_reached"]:
-            raise ValueError(
-                "The value of 'incorrect_goal_reached' must be smaller than the value of 'correct_goal_reached'"
-            )
-
     @staticmethod
     def _gen_mission():
         return ""
 
-    def _place_satic_objects(self) -> List[Tuple[int, int]]:
+    def _place_static_objects(self) -> List[Tuple[int, int]]:
         empty_cells: List[Tuple[int, int]] = []
         for y in range(self.size):
             for x in range(self.size):
@@ -187,26 +134,32 @@ class BoxEscape(MiniGridEnv):
                     empty_cells.append((x, y))
         return empty_cells
 
-    def _place_key(self, empty_cells: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+    def _place_key(
+        self, empty_cells: List[Tuple[int, int]]
+    ) -> Tuple[List[Tuple[int, int]], Tuple[int, int]]:
         key_pos: Tuple[int, int] = random.choice(empty_cells)
         self.grid.set(*key_pos, Key(COLOR_NAMES[self.chosen_color_i]))
         empty_cells.remove(key_pos)
-        return empty_cells
+        return empty_cells, key_pos
 
-    def _place_agent(self, empty_cells: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
-        self.agent_pos: Tuple[int, int] = random.choice(empty_cells)
-        self.agent_dir: int = random.randint(0, 3)
-        self.grid.set(*self.agent_pos, None)
-        empty_cells.remove(self.agent_pos)
-        return empty_cells
+    def _place_agent(
+        self, empty_cells: List[Tuple[int, int]], key_pos: Tuple[int, int]
+    ) -> List[Tuple[int, int]]:
+        while True:
+            agent_pos: Tuple[int, int] = random.choice(empty_cells)
+            # Ensure the agent is at least two squares away from the key
+            if abs(agent_pos[0] - key_pos[0]) + abs(agent_pos[1] - key_pos[1]) >= 2:
+                self.agent_pos = agent_pos
+                self.agent_dir = random.randint(0, 3)
+                self.grid.set(*self.agent_pos, None)
+                empty_cells.remove(self.agent_pos)
+                return empty_cells
 
     def _place_boxes(self, empty_cells: List[Tuple[int, int]]) -> None:
         for color_i in self.VALID_OBJ_COLOR_INDEXES:
-            boxes_n: int = random.randint(1, 4)
-            if color_i == self.chosen_color_i:
-                self.target_direction = (
-                    boxes_n  # 1 for top, 2 for right, 3 for bottom and 4 for left
-                )
+            boxes_n: int = (
+                self.target_direction if color_i == self.chosen_color_i else random.randint(1, 4)
+            )
             first_box_pos: Tuple[int, int] = random.choice(empty_cells)
             self.put_obj(Box(COLOR_NAMES[color_i]), *first_box_pos)
             empty_cells.remove(first_box_pos)
@@ -240,11 +193,15 @@ class BoxEscape(MiniGridEnv):
         self.chosen_color_i: int = random.choice(
             self.VALID_OBJ_COLOR_INDEXES
         )  # Not including 2, which is gray
+        self.target_direction: int = random.randint(1, 4)
         self.grid: Grid = Grid(width, height)
-        empty_cells: List[Tuple[int, int]] = self._place_satic_objects()
-        self._place_boxes(empty_cells=empty_cells)
-        empty_cells: List[Tuple[int, int]] = self._place_key(empty_cells=empty_cells)
-        empty_cells: List[Tuple[int, int]] = self._place_agent(empty_cells=empty_cells)
+        empty_cells: List[Tuple[int, int]] = self._place_static_objects()
+        if self.curriculum_level > 1:
+            self._place_boxes(empty_cells=empty_cells)
+        empty_cells, key_pos = self._place_key(empty_cells=empty_cells)
+        empty_cells: List[Tuple[int, int]] = self._place_agent(
+            empty_cells=empty_cells, key_pos=key_pos
+        )
         self._place_number_tiles()
 
         self.mission = None
@@ -320,9 +277,9 @@ class BoxEscape(MiniGridEnv):
                 pos_converted = (int(fwd_pos[0]), int(fwd_pos[1]))
                 goal_reached = self.GOAL_POS_MAP.get(pos_converted)
                 if goal_reached == self.target_direction:
-                    reward = self.rewards["correct_goal_reached"]
+                    reward = self.REWARDS[self.curriculum_level]["correct_goal_reached"]
                 else:
-                    reward = self.rewards["incorrect_goal_reached"]
+                    reward = self.REWARDS[self.curriculum_level]["incorrect_goal_reached"]
 
         # Pick up an object
         elif action == self.actions.pickup:
@@ -332,15 +289,25 @@ class BoxEscape(MiniGridEnv):
                     self.carrying.cur_pos = np.array([-1, -1])
                     self.grid.set(fwd_pos[0], fwd_pos[1], None)
                     if fwd_cell.type == "key":
-                        reward = self.rewards["key_pickup"]
+                        reward = self.REWARDS[self.curriculum_level]["key_pickup"]
+                        if self.curriculum_level < 3:
+                            terminated = True
+            else:
+                reward = self.REWARDS[self.curriculum_level]["pickup_penalty"]
 
         # Toggle/activate an object
         elif action == self.actions.toggle:
             if fwd_cell:
-                fwd_cell.toggle(self, fwd_pos)
+                can_toggle = fwd_cell.toggle(self, fwd_pos)
+                if not can_toggle:
+                    reward = self.REWARDS[self.curriculum_level]["toggle_penalty"]
+            else:
+                reward = self.REWARDS[self.curriculum_level]["toggle_penalty"]
 
         else:
             raise ValueError(f"Unknown action: {action}")
+
+        reward += self.REWARDS[self.curriculum_level]["step_penalty"]
 
         if self.step_count >= self.max_steps:
             truncated = True
