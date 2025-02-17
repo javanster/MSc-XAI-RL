@@ -14,6 +14,7 @@ from keras.api.layers import Conv2D, Dense, Flatten, Input
 from keras.api.models import Sequential
 from keras.api.optimizers import Adam
 from keras.api.random import SeedGenerator, categorical
+from tqdm import tqdm
 
 from .util_classes.trajectory_buffer import TrajectoryBuffer
 
@@ -52,8 +53,8 @@ class PPOAgent:
         self.steps_per_epoch: int = steps_per_epoch
         self.gamma: float = 0.99
         self.clip_ratio: float = 0.2
-        self.train_policy_iterations: int = 50
-        self.train_value_iterations: int = 50
+        self.train_policy_iterations: int = 10
+        self.train_value_iterations: int = 10
         self.lam: float = 0.97
         self.target_kl: float = 0.01
 
@@ -253,7 +254,7 @@ class PPOAgent:
             self._reset_env_and_tracking_vars()
         )
 
-        for epoch in range(epochs):
+        for epoch in tqdm(range(epochs), unit="epoch", total=epochs):
             # Initialize the sum of the returns, lengths and number of episodes for each epoch
             sum_return = 0
             sum_length = 0
@@ -339,6 +340,8 @@ class PPOAgent:
                         self._reset_env_and_tracking_vars()
                     )
 
+            print("Beginning training")
+
             # Get values from the buffer
             (
                 observation_buffer,
@@ -359,9 +362,13 @@ class PPOAgent:
                     # Early Stopping
                     break
 
+            print("Training of actor completed")
+
             # Update the value function
-            for l in range(self.train_value_iterations):
+            for _ in range(self.train_value_iterations):
                 self._train_value_function(observation_buffer, return_buffer)
+
+            print("Training of critic completed")
 
             # Print mean return and length for each epoch
             print(
@@ -405,7 +412,7 @@ class PPOAgent:
 
 if __name__ == "__main__":
 
-    ENV = "not"
+    ENV = input("Which env? Options are 'car' or 'cart': ")
 
     if ENV == "car":
 
@@ -438,10 +445,10 @@ if __name__ == "__main__":
             actor_model=actor_model,
             critic_model=critic_model,
             env=env,
-            steps_per_epoch=5,
+            steps_per_epoch=200,
         )
 
-        agent.train(env=env, epochs=1)
+        agent.train(env=env, epochs=3)
 
         env = gym.make("CCR-v5", render_mode="human")
 
@@ -476,7 +483,7 @@ if __name__ == "__main__":
             steps_per_epoch=4000,
         )
 
-        agent.train(env=env, epochs=5)
+        agent.train(env=env, epochs=10)
 
         env = gym.make("CartPole-v1", render_mode="human")
 
