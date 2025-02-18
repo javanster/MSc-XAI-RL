@@ -13,8 +13,8 @@ from tqdm import tqdm
 
 import wandb
 
+from .custom_types.ddqn_model_training_config import DDQNModelTrainingConfig
 from .custom_types.experience import Experience
-from .custom_types.model_training_config import ModelTrainingConfig
 from .util_classes.observation_normalization_callbacks import ObservationNormalizationCallbacks
 from .util_classes.replay_buffer import ReplayBuffer
 from .util_classes.reward_queue import RewardQueue
@@ -253,7 +253,7 @@ class DDQNAgent:
 
         return model_dir
 
-    def _save_training_info(self, directory_path: str, config: ModelTrainingConfig) -> None:
+    def _save_training_info(self, directory_path: str, config: DDQNModelTrainingConfig) -> None:
         """
         Saves detailed information about the training configuration and model architecture.
 
@@ -265,7 +265,7 @@ class DDQNAgent:
         ----------
         directory_path : str
             The path to the directory where the `info.txt` file should be saved.
-        config : ModelTrainingConfig
+        config : DDQNModelTrainingConfig
             A dictionary containing the training configuration settings.
 
         Returns
@@ -451,7 +451,7 @@ class DDQNAgent:
 
     def train(
         self,
-        config: ModelTrainingConfig | None,
+        config: DDQNModelTrainingConfig | None,
         model: Sequential,
         use_wandb: bool = False,
         use_sweep: bool = False,
@@ -466,7 +466,7 @@ class DDQNAgent:
 
         Parameters
         ----------
-        config : ModelTrainingConfig
+        config : DDQNModelTrainingConfig
             A dictionary containing training configuration parameters. Must include:
             - `env_name`: Name of the environment.
             - `replay_buffer_size`: Maximum size of the replay buffer.
@@ -514,7 +514,9 @@ class DDQNAgent:
         prop_steps_epsilon_decay: float = config["prop_steps_epsilon_decay"]
         min_epsilon: float = config["min_epsilon"]
         episode_metrics_window: int = config["episode_metrics_window"]
-        learning_rate: float = config["learning_rate"]
+        learning_rate: float | None = config[
+            "learning_rate"
+        ]  # Should be none if the model is already trained
 
         self.replay_buffer: ReplayBuffer = ReplayBuffer(maxlen=replay_buffer_size)
         reward_queue: RewardQueue = RewardQueue(maxlen=episode_metrics_window)
