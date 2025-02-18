@@ -1,49 +1,41 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import wandb
 
-from ..custom_types.model_training_config import ModelTrainingConfig
+from ..custom_types.ddqn_model_training_config import DDQNModelTrainingConfig
+from ..custom_types.ppo_model_training_config import PPOModelTrainingConfig
 from .reward_queue import RewardQueue
 
 
 class WandbLogger:
     """
-    A logger class for integrating with Weights & Biases (wandb) for logging
-    training metrics during reinforcement learning experiments.
+    Logger for integrating with Weights & Biases (wandb) to track reinforcement learning training metrics.
 
-    This class allows logging of step-level and episode-level metrics, including
-    step count, epsilon value, episode rewards, rolling averages, and tumbling
-    window statistics. It supports both standalone and sweep-based runs, ensuring
-    flexibility in tracking training progress.
+    This class supports logging of metrics at different granularities including steps, episodes, and epochs.
+    It handles both standalone and sweep-based runs. In standalone runs, a configuration object containing
+    a 'project_name' is required.
 
     Parameters
     ----------
     log_active : bool
-        Whether logging is active.
+        Flag indicating whether logging is enabled.
     sweep_active : bool
-        Whether the wandb sweep is active.
-    config : ModelTrainingConfig or None
-        Configuration object for wandb. Must include `project_name` if
-        `sweep_active` is False.
+        Flag indicating whether the wandb sweep mode is active.
+    config : DDQNModelTrainingConfig or PPOModelTrainingConfig or None
+        Configuration dictionary for wandb initialization. For standalone runs (i.e., when
+        sweep_active is False), config must not be None and must include a 'project_name' key.
 
     Raises
     ------
     ValueError
-        If `log_active` is True, `sweep_active` is False, and `config` is None,
-        a ValueError is raised to ensure that standalone runs have a valid configuration.
-
-    Methods
-    -------
-    log_step_data(steps_passed, epsilon)
-        Logs step-level data, including the current step count and epsilon value.
-    log_episode_data(episodes_passed, reward_queue, episode_reward, episode_metrics_window)
-        Logs episode-level data, including episode reward, rolling average reward,
-        and tumbling window statistics. Also tracks min and max rewards within
-        the tumbling window.
+        If logging is active, the run is not a sweep, and config is None.
     """
 
     def __init__(
-        self, log_active: bool, sweep_active: bool, config: ModelTrainingConfig | None
+        self,
+        log_active: bool,
+        sweep_active: bool,
+        config: DDQNModelTrainingConfig | PPOModelTrainingConfig | None,
     ) -> None:
         self.log_active = log_active
 
@@ -58,16 +50,16 @@ class WandbLogger:
         else:
             wandb.init(project=config["project_name"], config=config, mode="online")  # type: ignore
 
-    def log_step_data(self, steps_passed: int, epsilon: float) -> None:
+    def log_step_data(self, steps_passed: int, epsilon: Optional[float]) -> None:
         """
-        Logs step-level data such as the current step count and epsilon value.
+        Log step-level metrics including the current step count and epsilon value.
 
         Parameters
         ----------
         steps_passed : int
-            The number of steps that have passed.
-        epsilon : float
-            The current value of epsilon (e.g., exploration rate).
+            The total number of steps completed so far.
+        epsilon : float or None
+            The current value of epsilon (exploration rate). Can be None if not applicable.
         """
         if not self.log_active:
             return
@@ -86,19 +78,22 @@ class WandbLogger:
         episode_metrics_window: int,
     ) -> None:
         """
-        Logs episode-level data such as episode reward, rolling average reward,
-        and tumbling window metrics.
+        Log episode-level metrics including episode reward and window-based statistics.
+
+        This method logs the reward for the current episode and, when enough episodes have passed to fill
+        the specified metrics window, logs the rolling average reward along with the minimum and maximum rewards
+        observed in the window.
 
         Parameters
         ----------
         episodes_passed : int
-            The number of episodes that have passed.
+            The total number of episodes completed so far.
         reward_queue : RewardQueue
-            An instance of the RewardQueue class, which tracks rewards for recent episodes.
+            Instance of RewardQueue used to compute window-based reward statistics.
         episode_reward : float
             The reward obtained in the current episode.
         episode_metrics_window : int
-            The size of the window used for tumbling window metrics.
+            The number of episodes constituting the tumbling window for computing statistics.
         """
         if not self.log_active:
             return
@@ -120,3 +115,43 @@ class WandbLogger:
             log_data["max_reward_in_tumbling_window"] = max_reward
 
         wandb.log(log_data)  # type: ignore
+
+    def log_epoch_data(self, learning_rate):
+        """
+        Log metrics for the current epoch, specifically the learning rate.
+
+        Parameters
+        ----------
+        learning_rate : float
+            The learning rate used in the current training epoch.
+        """
+        if not self.log_active:
+            return
+
+        wandb.log(  # type: ignore
+            {
+                "learning_rate": learning_rate,
+            }
+        )
+
+    def log_training_epoch_data(self, avg_loss, avg_kl):
+        """
+        Log aggregated training metrics for the training epoch, including average loss and average KL divergence.
+
+        Parameters
+        ----------
+        avg_loss : float
+            The average loss computed over the training epoch.
+        avg_kl : float
+            The average Kullback-Leibler divergence computed over the training epoch.
+        """
+
+        if not self.log_active:
+            return
+
+        wandb.log(  # type: ignore
+            {
+                "avg_loss": avg_loss,
+                "avg_kl": avg_kl,
+            }
+        )
