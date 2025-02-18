@@ -89,6 +89,7 @@ class HumanPlayer:
             self.env.render()
 
             terminated = False
+            episode_reward = 0
 
             while not terminated:
                 action = None
@@ -100,10 +101,13 @@ class HumanPlayer:
                     if pygame.time.get_ticks() - start_ticks > timeout:
                         action = default_action
 
-                _, _, terminated, _, _ = self.env.step(action=action)
+                _, reward, terminated, _, _ = self.env.step(action=action)
+
+                episode_reward += reward
 
                 self.env.render()
 
             time.sleep(2)
+            print(f"Terminated! Episode reward: {episode_reward}")
 
         self.env.close()
