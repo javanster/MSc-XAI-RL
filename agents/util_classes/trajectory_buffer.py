@@ -2,6 +2,7 @@ from typing import Tuple
 
 import numpy as np
 import scipy
+import tensorflow as tf
 
 
 class TrajectoryBuffer:
@@ -172,20 +173,20 @@ class TrajectoryBuffer:
 
         self.trajectory_start_index = self.pointer
 
-    def get_and_reset(self):
+    def get_and_reset(self, mini_batch_size: int) -> tf.data.Dataset:
         """
         Retrieve the stored trajectories and reset the buffer for reuse.
 
-        This method normalizes the advantage estimates, resets the buffer pointers,
-        and returns all stored arrays.
+        This method creates a dataset from the stored arrays and applies per-batch
+        normalization on the advantage estimates.
 
         Returns
         -------
-        tuple
-            A tuple containing the following numpy arrays in order:
+        tf.data.Dataset
+            A dataset yielding tuples containing:
             - observation_buffer: Array of observations.
             - action_buffer: Array of actions.
-            - advantage_buffer: Normalized advantage estimates.
+            - advantage_buffer: Per-batch normalized advantage estimates.
             - return_buffer: Discounted returns.
             - logprob_buffer: Log probabilities of actions.
             - value_buffer: Estimated state values.
@@ -198,17 +199,31 @@ class TrajectoryBuffer:
         if self.pointer != self.size:
             raise ValueError("get_and_empty called before buffer was full")
 
-        advantage_mean = np.mean(self.advantage_buffer)
-        advantage_std = np.std(self.advantage_buffer)
-        self.advantage_buffer = (self.advantage_buffer - advantage_mean) / advantage_std
-
+        # Do not normalize the entire advantage_buffer here.
+        # Instead, simply reset the pointers and create the dataset with raw values.
         self.pointer, self.trajectory_start_index = 0, 0
 
-        return (
-            self.observation_buffer,
-            self.action_buffer,
-            self.advantage_buffer,
-            self.return_buffer,
-            self.logprob_buffer,
-            self.value_buffer,
+        dataset = tf.data.Dataset.from_tensor_slices(
+            (
+                self.observation_buffer,
+                self.action_buffer,
+                self.advantage_buffer,
+                self.return_buffer,
+                self.logprob_buffer,
+                self.value_buffer,
+            )
         )
+
+        dataset = dataset.shuffle(buffer_size=self.size)
+        dataset = dataset.batch(mini_batch_size)
+
+        # Normalizes advantages per mini-batch.
+        def normalize_advantages(obs, actions, advantages, returns, logprobs, values):
+            adv_mean = tf.reduce_mean(advantages)
+            adv_std = tf.math.reduce_std(advantages)
+            normalized_advantages = (advantages - adv_mean) / (adv_std + 1e-8)
+            return obs, actions, normalized_advantages, returns, logprobs, values
+
+        dataset = dataset.map(normalize_advantages)
+
+        return dataset
