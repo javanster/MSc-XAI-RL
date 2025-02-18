@@ -5,6 +5,28 @@ import scipy
 
 
 class TrajectoryBuffer:
+    """
+    A buffer for storing trajectories and computing advantages using Generalized Advantage Estimation (GAE).
+
+    This class supports both continuous and discrete action spaces as well as numerical and image observations.
+    It buffers observations, actions, rewards, values, and log probabilities, and computes discounted returns
+    and advantages for a complete trajectory.
+
+    Parameters
+    ----------
+    is_continuous_action_space : bool
+        Flag indicating whether the action space is continuous.
+    observation_shape : Tuple[int, ...]
+        Shape of the observation space.
+    num_actions : int
+        Number of actions (or dimensionality for continuous actions).
+    size : int
+        Maximum number of transitions that can be stored in the buffer.
+    discount : float
+        Discount factor for future rewards.
+    gae_lambda : float
+        Lambda parameter for Generalized Advantage Estimation.
+    """
 
     def __init__(
         self,
@@ -12,8 +34,8 @@ class TrajectoryBuffer:
         observation_shape: Tuple[int, ...],
         num_actions: int,
         size: int,
-        gamma: float = 0.99,
-        lam: float = 0.95,
+        discount: float,
+        gae_lambda: float,
     ) -> None:
         self.size = size
         if len(observation_shape) == 1:
@@ -37,13 +59,34 @@ class TrajectoryBuffer:
         self.return_buffer: np.ndarray = np.zeros(shape=size, dtype=np.float32)
         self.value_buffer: np.ndarray = np.zeros(shape=size, dtype=np.float32)
         self.logprob_buffer: np.ndarray = np.zeros(shape=size, dtype=np.float32)
-        self.gamma: float = gamma
-        self.lam: float = lam
+        self.discount: float = discount
+        self.gae_lambda: float = gae_lambda
         self.pointer: int = 0
         self.trajectory_start_index: int = 0
 
     # Computes Generalized Advantage Estimation (GAE)
     def _discounted_cumulative_sums(self, sequence: np.ndarray, discount: float):
+        """
+        Compute discounted cumulative sums / Generalized Advantage Estimation
+        (GAE) of a sequence using a linear filter.
+
+        Parameters
+        ----------
+        sequence : np.ndarray
+            Array of values for which the cumulative sums are computed.
+        discount : float
+            Discount factor to apply at each step. Must be between 0 and 1.
+
+        Returns
+        -------
+        np.ndarray
+            Array containing the discounted cumulative sums.
+
+        Raises
+        ------
+        ValueError
+            If discount is not a float between 0 and 1.
+        """
         if not (0.0 <= discount <= 1.0):
             raise ValueError('"discount" must be a float between 0 and 1.')
 
@@ -52,11 +95,32 @@ class TrajectoryBuffer:
     def insert(
         self,
         observation: np.ndarray,
-        action: np.ndarray,  # Supports continuous actions
+        action: np.ndarray,
         reward: float,
         value: float,
         logprob: float,
     ) -> None:
+        """
+        Insert a new transition into the trajectory buffer.
+
+        Parameters
+        ----------
+        observation : np.ndarray
+            The observation from the environment.
+        action : np.ndarray
+            The action taken.
+        reward : float
+            The reward received after taking the action.
+        value : float
+            The estimated value of the current state.
+        logprob : float
+            The log probability of the taken action.
+
+        Raises
+        ------
+        ValueError
+            If the buffer is full and cannot accept more transitions.
+        """
         if self.pointer >= self.size:
             raise ValueError(
                 "Buffer overflow. Consider increasing buffer size or handling buffer reset."
@@ -81,20 +145,56 @@ class TrajectoryBuffer:
         self.pointer += 1
 
     def complete_episode_trajectory(self, last_value: float = 0) -> None:
+        """
+        Finalize the current trajectory by computing advantages and returns.
+
+        The method computes the temporal-difference residuals and applies the discounted cumulative
+        sum to obtain the advantage estimates using Generalized Advantage Estimation (GAE), and computes
+        the discounted returns.
+
+        Parameters
+        ----------
+        last_value : float, optional
+            The value estimate for the final state (default is 0).
+        """
         path_slice = slice(self.trajectory_start_index, self.pointer)
         rewards = np.append(self.reward_buffer[path_slice], last_value)
         values = np.append(self.value_buffer[path_slice], last_value)
 
-        deltas = rewards[:-1] + self.gamma * values[1:] - values[:-1]
+        deltas = rewards[:-1] + self.discount * values[1:] - values[:-1]
 
         self.advantage_buffer[path_slice] = self._discounted_cumulative_sums(
-            deltas, self.gamma * self.lam
+            deltas, self.discount * self.gae_lambda
         )
-        self.return_buffer[path_slice] = self._discounted_cumulative_sums(rewards, self.gamma)[:-1]
+        self.return_buffer[path_slice] = self._discounted_cumulative_sums(rewards, self.discount)[
+            :-1
+        ]
 
         self.trajectory_start_index = self.pointer
 
     def get_and_reset(self):
+        """
+        Retrieve the stored trajectories and reset the buffer for reuse.
+
+        This method normalizes the advantage estimates, resets the buffer pointers,
+        and returns all stored arrays.
+
+        Returns
+        -------
+        tuple
+            A tuple containing the following numpy arrays in order:
+            - observation_buffer: Array of observations.
+            - action_buffer: Array of actions.
+            - advantage_buffer: Normalized advantage estimates.
+            - return_buffer: Discounted returns.
+            - logprob_buffer: Log probabilities of actions.
+            - value_buffer: Estimated state values.
+
+        Raises
+        ------
+        ValueError
+            If the buffer is not full when attempting to retrieve the trajectories.
+        """
         if self.pointer != self.size:
             raise ValueError("get_and_empty called before buffer was full")
 
@@ -110,4 +210,5 @@ class TrajectoryBuffer:
             self.advantage_buffer,
             self.return_buffer,
             self.logprob_buffer,
+            self.value_buffer,
         )
