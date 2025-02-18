@@ -2,8 +2,6 @@ import os
 import time
 from typing import Tuple
 
-import ccr
-
 os.environ["KERAS_BACKEND"] = "tensorflow"
 
 import gymnasium as gym
@@ -11,7 +9,6 @@ import keras
 import numpy as np
 import tensorflow as tf
 from gymnasium import Env
-from keras.api.layers import Dense, Flatten, Input
 from keras.api.models import Model
 from keras.api.optimizers import Adam
 from keras.api.random import SeedGenerator
@@ -450,74 +447,3 @@ class PPOAgent:
             observation, _, terminated, _, _ = env.step(env_action)
             if render:
                 env.render()
-
-
-def create_mlp_actor_critic_model(input_shape, num_actions):
-    """Creates a simple MLP-based actor-critic model for CartPole."""
-    inputs = Input(shape=input_shape)
-    x = Flatten()(inputs)
-    x = Dense(64, activation="tanh", kernel_initializer="orthogonal")(x)
-    x = Dense(64, activation="tanh", kernel_initializer="orthogonal")(x)
-    # Actor head: outputs logits for each discrete action.
-    actor_logits = Dense(
-        num_actions,
-        activation="linear",
-        kernel_initializer=keras.initializers.RandomNormal(stddev=0.01),  # type: ignore
-        name="actor_logits",
-    )(x)
-    # Critic head: outputs a scalar value.
-    critic = Dense(1, activation="linear", kernel_initializer="orthogonal", name="critic")(x)
-    return Model(inputs=inputs, outputs=[actor_logits, critic])
-
-
-""" if __name__ == "__main__":
-    # Create the CartPole environment.
-    env = gym.make("CartPole-v1")
-    input_shape = env.observation_space.shape  # For CartPole, typically (4,)
-    num_actions = env.action_space.n  # For CartPole, there are 2 discrete actions.
-
-    # Create the shared actor-critic model.
-    shared_model = create_mlp_actor_critic_model(input_shape, num_actions)
-
-    # For discrete action spaces, actor_logstd is not used.
-    actor_logstd = None
-
-    # Create the PPO agent.
-    # Note: steps_per_epoch here refers to the number of transitions collected per update.
-    # Set use_rollback=True if you want rollback on KL overshoot, or False for plain early stopping.
-    agent = PPOAgent(
-        env=env,
-        observation_shape=input_shape,
-        shared_model=shared_model,
-        steps_per_epoch=4000,
-        learning_rate=3e-3,
-        use_rollback=False,  # Change to False if you only want early stopping.
-        actor_logstd=actor_logstd,
-    )
-
-    # Train for 8000 steps (adjust as needed)
-    agent.train(env=env, training_steps=120_000)
-
-    # After training, test the agent with rendering enabled.
-    env = gym.make("CartPole-v1", render_mode="human")
-    agent.test(env=env) """
-
-
-if __name__ == "__main__":
-    pass
-
-"""self.shared_model: Model = shared_model
-        self.actor_logstd: tf.Variable | None = actor_logstd
-        self.initial_lr = learning_rate  # Use one LR for all parameters
-        self.optimizer = Adam(learning_rate=learning_rate)
-        self.vf_coef = 0.5  # For example, matching the PyTorch default
-
-        self.steps_per_epoch: int = steps_per_epoch
-        self.discount: float = 0.99
-        self.clip_ratio: float = 0.2
-        self.update_iterations: int = 80
-        self.train_value_iterations: int = 80
-        self.gae_lambda: float = 0.97
-        self.target_kl: float = 0.01
-        self.ent_coef: float = 0.01
-        self.max_grad_norm: float = 0.5"""
