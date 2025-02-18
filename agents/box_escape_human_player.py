@@ -70,3 +70,16 @@ class BoxEscapeHumanPlayer(ManualControl):
             self.step(action)
         else:
             print(key)
+
+    def step(self, action: Actions):
+        _, reward, terminated, truncated, _ = self.env.step(action)
+        print(f"step={self.env.unwrapped.step_count}, reward={reward}")
+
+        if terminated:
+            print("terminated!")
+            self.reset(self.seed)
+        elif truncated:
+            print("truncated!")
+            self.reset(self.seed)
+        else:
+            self.env.render()
