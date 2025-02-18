@@ -144,7 +144,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/98/c2/ab05b5329dc4416b5
 
 [[package]]
 name = "ccr"
-version = "5.0.0"
+version = "5.0.1"
 source = { directory = "environments/ccr" }
 dependencies = [
     { name = "gymnasium" },
