@@ -1,7 +1,7 @@
-from typing import TypedDict
+from typing import Optional, TypedDict
 
 
-class ModelTrainingConfig(TypedDict):
+class DDQNModelTrainingConfig(TypedDict):
     """
     A TypedDict defining the required configuration for training a reinforcement learning model.
 
@@ -26,7 +26,7 @@ class ModelTrainingConfig(TypedDict):
         The number of steps between training updates for the online model.
     update_target_every : int
         The number of steps between updates of the target model's weights.
-    learning_rate : float
+    learning_rate : float | None
         The learning rate for the optimizer used during training.
     prop_steps_epsilon_decay : float
         The proportion of total training steps over which epsilon will decay.
@@ -48,7 +48,7 @@ class ModelTrainingConfig(TypedDict):
     discount: float
     training_frequency: int
     update_target_every: int
-    learning_rate: float
+    learning_rate: Optional[float]
     prop_steps_epsilon_decay: float
     starting_epsilon: float
     min_epsilon: float
