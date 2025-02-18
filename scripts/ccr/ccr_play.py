@@ -4,6 +4,14 @@ import numpy as np
 from gymnasium.utils.play import play
 
 if __name__ == "__main__":
+
+    step_n: int = 0
+
+    def update_step(obs_t, obs_tp1, action, rew, terminated, truncated, info):
+        global step_n
+        step_n += 1
+        print(step_n)
+
     play(
         gym.make("CCR-v5", render_mode="rgb_array"),
         keys_to_action={
@@ -17,4 +25,5 @@ if __name__ == "__main__":
             "as": np.array([-1, 0, 1], dtype=np.float32),
         },
         noop=np.array([0, 0, 0], dtype=np.float32),
+        callback=update_step,
     )
