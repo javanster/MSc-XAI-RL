@@ -1,5 +1,5 @@
 import random
-from typing import Any, Dict, List, Set, SupportsFloat, Tuple, Type
+from typing import Any, Dict, List, SupportsFloat, Tuple, Type
 
 import numpy as np
 from gymnasium import spaces
@@ -16,7 +16,7 @@ from .number_tile import NumberTile
 from .static_obj_map import STATIC_OBJ_MAP
 
 
-class BoxEscape(MiniGridEnv):
+class BoxEscapeMiniGrid(MiniGridEnv):
     """
     A custom MiniGrid environment where the agent must navigate around boxes,
     pick up the key, and unlock a door to reach the goal. There are four doors,
@@ -134,26 +134,18 @@ class BoxEscape(MiniGridEnv):
                     empty_cells.append((x, y))
         return empty_cells
 
-    def _place_key(
-        self, empty_cells: List[Tuple[int, int]]
-    ) -> Tuple[List[Tuple[int, int]], Tuple[int, int]]:
+    def _place_key(self, empty_cells: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
         key_pos: Tuple[int, int] = random.choice(empty_cells)
         self.grid.set(*key_pos, Key(COLOR_NAMES[self.chosen_color_i]))
         empty_cells.remove(key_pos)
-        return empty_cells, key_pos
+        return empty_cells
 
-    def _place_agent(
-        self, empty_cells: List[Tuple[int, int]], key_pos: Tuple[int, int]
-    ) -> List[Tuple[int, int]]:
-        while True:
-            agent_pos: Tuple[int, int] = random.choice(empty_cells)
-            # Ensure the agent is at least two squares away from the key
-            if abs(agent_pos[0] - key_pos[0]) + abs(agent_pos[1] - key_pos[1]) >= 2:
-                self.agent_pos = agent_pos
-                self.agent_dir = random.randint(0, 3)
-                self.grid.set(*self.agent_pos, None)
-                empty_cells.remove(self.agent_pos)
-                return empty_cells
+    def _place_agent(self, empty_cells: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+        self.agent_pos: Tuple[int, int] = random.choice(empty_cells)
+        self.agent_dir: int = random.randint(0, 3)
+        self.grid.set(*self.agent_pos, None)
+        empty_cells.remove(self.agent_pos)
+        return empty_cells
 
     def _place_boxes(self, empty_cells: List[Tuple[int, int]]) -> None:
         for color_i in self.VALID_OBJ_COLOR_INDEXES:
@@ -198,10 +190,8 @@ class BoxEscape(MiniGridEnv):
         empty_cells: List[Tuple[int, int]] = self._place_static_objects()
         if self.curriculum_level > 1:
             self._place_boxes(empty_cells=empty_cells)
-        empty_cells, key_pos = self._place_key(empty_cells=empty_cells)
-        empty_cells: List[Tuple[int, int]] = self._place_agent(
-            empty_cells=empty_cells, key_pos=key_pos
-        )
+        empty_cells: List[Tuple[int, int]] = self._place_key(empty_cells=empty_cells)
+        empty_cells: List[Tuple[int, int]] = self._place_agent(empty_cells=empty_cells)
         self._place_number_tiles()
 
         self.mission = None

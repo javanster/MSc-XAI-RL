@@ -1,0 +1,1 @@
+from .box_escape_minigrid import BoxEscapeMiniGrid
