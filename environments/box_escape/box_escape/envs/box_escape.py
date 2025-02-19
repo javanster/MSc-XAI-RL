@@ -15,11 +15,9 @@ class BoxEscape(Env):
     """
     A grid-based environment where an agent must navigate toward a goal based on the number of boxes.
 
-    This is a LITE version of the BoxEscape environment
-
-    There are four goals which each terminate the episode when reached by the agent. The reward received
+    There are eight goals which each terminate the episode when reached by the agent. The reward received
     is based on whether the goal was the correct one or not. Each episode, one of the goals is selected
-    as the correct one at random. The chosen goal (1, 2, 3 or 4) decides how many boxes are placed in the
+    as the correct one at random. The chosen goal decides how many boxes are placed in the
     environment, making the number of boxes a direct indication of which goal is correct.
 
     Attributes
