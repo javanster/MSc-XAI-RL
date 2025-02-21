@@ -7,14 +7,16 @@ requires-python = ">=3.11"
 dependencies = [
     "avocado-run",
     "black>=24.10.0",
-    "box-escape",
     "box-escape-lite",
     "box2d-py>=2.3.8",
     "ccr",
+    "changing-supervisor",
     "gem-collector",
+    "gold-run",
     "gymnasium[other]>=1.0.0",
     "isort>=5.13.2",
     "keras>=3.7.0",
+    "minecart-counter",
     "minigrid>=3.0.0",
     "miniworld>=2.1.0",
     "numpy>=2.0.2",
@@ -37,6 +39,8 @@ line_length = 100
 [tool.uv.sources]
 avocado-run = { path = "environments/avocado_run" }
 gem-collector = { path = "environments/gem_collector" }
-box-escape = { path = "environments/box_escape" }
 box-escape-lite = { path = "environments/box_escape_lite" }
 ccr = { path = "environments/ccr" }
+changing-supervisor = { path = "environments/changing_supervisor" }
+gold-run = { path = "environments/gold_run" }
+minecart-counter = { path = "environments/minecart_counter" }
