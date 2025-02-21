@@ -52,6 +52,8 @@ class Entity:
             self.move(x=-1)  # Left
         elif choice == 7:
             self.move(x=-1, y=-1)  # Up left
+        elif choice == 9:
+            self.move()  # Do nothing
 
     def move(self, x=0, y=0) -> None:
         self.x = max(0, min(self.x + x, self.grid_side_length - 1))
