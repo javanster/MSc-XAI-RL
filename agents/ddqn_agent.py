@@ -422,52 +422,78 @@ class DDQNAgent:
         return new_state, reward, terminated, truncated
 
     def _save_online_model(
-        self, model_dir: str, average_reward: float, max_reward: float, min_reward: float
+        self,
+        model_dir: str,
+        time_step: int,
+        episode_n: int,
+        average_reward: float,
+        max_reward: float,
+        min_reward: float,
     ) -> None:
         """
-        Saves the online model to a file with a name that includes performance metrics.
+        Saves the trained online model to a file with a name containing performance metrics.
 
-        This method saves the online model to the specified directory. The filename
-        includes a timestamp and performance metrics (average reward, maximum reward,
-        and minimum reward) to uniquely identify the saved model.
+        The filename includes the episode number, training time step, and key performance
+        metrics (average, max, and min reward) to provide insight into the model's
+        performance at the time of saving.
 
         Parameters
         ----------
         model_dir : str
             The directory where the model file will be saved.
+        time_step : int
+            The number of training steps that have been completed at the time of saving.
+        episode_n : int
+            The episode number at which the model is being saved.
         average_reward : float
-            The average reward achieved during a training period, included in the filename.
+            The average reward achieved within the episode metrics window.
         max_reward : float
-            The maximum reward achieved during a training period, included in the filename.
+            The maximum reward achieved within the episode metrics window.
         min_reward : float
-            The minimum reward achieved during a training period, included in the filename.
+            The minimum reward achieved within the episode metrics window.
 
         Returns
         -------
         None
         """
-        model_file_path = f"{model_dir}/{int(time.time())}_model_{average_reward:_>9.4f}avg_{max_reward:_>9.4f}max_{min_reward:_>9.4f}min.keras"
+        model_file_path = f"{model_dir}/model_time_step_{time_step}_episode_{episode_n}_{average_reward:_>9.4f}avg_{max_reward:_>9.4f}max_{min_reward:_>9.4f}min.keras"
         self.online_model.save(model_file_path)
 
     def train(
         self,
         config: DDQNModelTrainingConfig | None,
         model: Sequential,
+        save_model_every: Optional[int] = None,
         use_wandb: bool = False,
         use_sweep: bool = False,
     ) -> None:
         """
-        Trains the DDQN agent in the specified environment.
+        Trains the DDQN agent using experience replay and target network updates.
 
         This method trains the agent using the Double Deep Q-Network (DDQN) algorithm.
         It initializes the necessary components, including the replay buffer, reward tracking,
-        and epsilon decay schedule. The training process is logged step-by-step and episode-by-episode,
-        with optional integration into Weights & Biases (WandB) for detailed tracking.
+        epsilon decay schedule, and model saving mechanisms. Training is logged step-by-step
+        and episode-by-episode, with optional integration into Weights & Biases (WandB) for
+        detailed monitoring.
+
+        Training updates occur at predefined intervals:
+        - The online model is updated based on experiences stored in the replay buffer.
+        - The target model's weights are updated periodically to stabilize learning.
+        - The agent follows an epsilon-greedy exploration strategy with decaying epsilon.
+
+        The model is saved automatically when:
+        - A new highest average reward is achieved within a tumbling episode window.
+        - A predefined number of training steps (`save_model_every`) have passed.
+
+        When saving a model, the filename includes:
+        - The number of training steps completed at that point.
+        - The episode number at which it was saved.
+        - The average, maximum, and minimum rewards at that time.
 
         Parameters
         ----------
         config : DDQNModelTrainingConfig
-            A dictionary containing training configuration parameters. Must include:
+            A dictionary containing training configuration parameters, including:
             - `env_name`: Name of the environment.
             - `replay_buffer_size`: Maximum size of the replay buffer.
             - `min_replay_buffer_size`: Minimum size of the replay buffer before training starts.
@@ -481,11 +507,14 @@ class DDQNAgent:
             - `min_epsilon`: Minimum allowable epsilon value.
             - `episode_metrics_window`: Tumbling window size for reward metrics.
         model : keras.api.models.Sequential
-            A pre-defined model to use for both the online and target networks.
-        use_wandb : bool, optional
-            Whether to log training progress and metrics to Weights & Biases (WandB). Defaults to False.
-        use_sweep : bool, optional
-            Whether the training is part of a WandB sweep (hyperparameter tuning). Defaults to False.
+            The neural network model to be used for training. If it is not precompiled,
+            a learning rate must be provided in the configuration.
+        save_model_every : Optional[int], default=None
+            If provided, the model is saved every `save_model_every` training steps.
+        use_wandb : bool, default=False
+            Whether to log training progress and metrics to Weights & Biases (WandB).
+        use_sweep : bool, default=False
+            Whether the training is part of a WandB sweep (hyperparameter tuning).
 
         Returns
         -------
@@ -606,17 +635,38 @@ class DDQNAgent:
 
                         self._save_online_model(
                             model_dir=model_dir,
+                            time_step=steps_passed,
+                            episode_n=episodes_passed,
                             average_reward=average_reward,
                             max_reward=max_reward,
                             min_reward=min_reward,
                         )
 
+                if save_model_every is not None and steps_passed % save_model_every == 0:
+                    average_reward = reward_queue.get_average_reward()
+                    max_reward = reward_queue.get_max_reward()
+                    min_reward = reward_queue.get_min_reward()
+
+                    self._save_online_model(
+                        model_dir=model_dir,
+                        time_step=steps_passed,
+                        episode_n=episodes_passed,
+                        average_reward=average_reward,
+                        max_reward=max_reward,
+                        min_reward=min_reward,
+                    )
+
             self.env.close()
 
         # Save final model
         if average_reward and max_reward and min_reward:
+            average_reward = reward_queue.get_average_reward()
+            max_reward = reward_queue.get_max_reward()
+            min_reward = reward_queue.get_min_reward()
             self._save_online_model(
                 model_dir=model_dir,
+                time_step=steps_passed,
+                episode_n=episodes_passed,
                 average_reward=average_reward,
                 max_reward=max_reward,
                 min_reward=min_reward,
