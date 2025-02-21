@@ -316,9 +316,6 @@ class ChangingSupervisor(Env):
         canvas: pygame.Surface = pygame.Surface((self.window_size, self.window_size))
         pix_square_size: float = self.window_size / self.grid_side_length
 
-        canvas: pygame.Surface = pygame.Surface((self.window_size, self.window_size))
-        pix_square_size: float = self.window_size / self.grid_side_length
-
         if self.render_raw_pixels:
             obs_grid: np.ndarray = self._get_obs()
 
