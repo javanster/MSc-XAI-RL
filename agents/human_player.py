@@ -102,7 +102,7 @@ class HumanPlayer:
                         action = default_action
 
                 _, reward, terminated, _, _ = self.env.step(action=action)
-
+                print(f"Step reward: {reward}")
                 episode_reward += reward
 
                 self.env.render()
