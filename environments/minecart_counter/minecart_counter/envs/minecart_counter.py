@@ -228,12 +228,16 @@ class MinecartCounter(Env):
         reward = -0.005
         terminated = False
         truncated = False
+        goal_reached = False
+        correct_goal_reached = False
 
         goal_reward = 0
         for i, goal in enumerate(self.goals):
             if self.agent == goal:
+                goal_reached = True
                 goal_reward = 0.21
                 if i + 1 == self.target_direction:
+                    correct_goal_reached = True
                     goal_reward = 1.01
                 terminated = True
                 break
@@ -242,7 +246,11 @@ class MinecartCounter(Env):
         if self.episode_step >= 200:
             truncated = True
 
-        info = {}
+        info = {
+            "goal_reached": goal_reached,
+            "correct_goal_reached": correct_goal_reached,
+            "truncated": truncated,
+        }
 
         return new_observation, reward, terminated, truncated, info
 
