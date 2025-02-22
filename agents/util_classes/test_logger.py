@@ -5,8 +5,7 @@ import numpy as np
 
 class TestLogger:
     """
-    A logger class for logging information at each time step during training or testing of an
-    agent.
+    A logger class for logging information at each time step during testing of an agent.
 
     Parameters
     ----------
