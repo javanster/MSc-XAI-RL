@@ -152,12 +152,12 @@ class BinaryConcept:
             return
 
         self._ensure_save_directory_exists(directory_path=directory_path)
-        positive_file_path = (
-            f"{directory_path}/{self.name}_{len(self.positive_examples)}_positive_examples.npy"
-        )
+        positive_file_path = f"{directory_path}/binary_concept_{self.name}_{len(self.positive_examples)}_positive_examples.npy"
         positive_array = np.array(self.positive_examples)
         np.save(positive_file_path, positive_array)
-        print(f"Positive concept examples successfully saved to {positive_file_path}.")
+        print(
+            f"Positive examples of concept {self.name} successfully saved to {positive_file_path}."
+        )
 
     def _save_negative_examples(self, directory_path: str):
         """
@@ -175,9 +175,9 @@ class BinaryConcept:
             return
 
         self._ensure_save_directory_exists(directory_path=directory_path)
-        negative_file_path = (
-            f"{directory_path}/{self.name}_{len(self.negative_examples)}_negative_examples.npy"
-        )
+        negative_file_path = f"{directory_path}/binary_concept_{self.name}_{len(self.negative_examples)}_negative_examples.npy"
         negative_array = np.array(self.negative_examples)
         np.save(negative_file_path, negative_array)
-        print(f"Negative concept examples successfully saved to {negative_file_path}.")
+        print(
+            f"Negative examples of concept {self.name} successfully saved to {negative_file_path}."
+        )
