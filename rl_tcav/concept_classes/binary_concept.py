@@ -9,30 +9,33 @@ class BinaryConcept:
     """
     A class to represent a binary concept with positive and negative examples.
 
-    This class is designed to manage binary concepts, storing positive and
-    negative examples of observations, and allowing for their retrieval and persistence.
+    This class manages binary concepts by storing positive and negative observations
+    and provides methods for checking, retrieving, and saving these examples.
 
-    Parameters
+    Attributes
     ----------
     name : str
         The name of the binary concept.
-    observation_presence_callback : Optional[Callable[[Env], bool]], optional
-        A callback function that determines whether an observation belongs
-        to the positive set, by default None.
-    positive_examples : List[np.ndarray], optional
-        A list of positive examples of observations, by default an empty list.
-    negative_examples : List[np.ndarray], optional
-        A list of negative examples of observations, by default an empty list.
+    environment_name : str
+        The name of the environment associated with this concept.
+    observation_presence_callback : Callable[[Env], bool] or None
+        A callback function to determine whether an observation belongs to the positive set.
+    positive_examples : List[np.ndarray]
+        A list of positive observation examples.
+    negative_examples : List[np.ndarray]
+        A list of negative observation examples.
     """
 
     def __init__(
         self,
         name: str,
+        environment_name: str,
         observation_presence_callback: Optional[Callable[[Env], bool]] = None,
         positive_examples: List[np.ndarray] = [],
         negative_examples: List[np.ndarray] = [],
     ) -> None:
         self.name: str = name
+        self.environment_name = environment_name
         self.observation_presence_callback: Callable[[Env], bool] | None = (
             observation_presence_callback
         )
@@ -41,7 +44,7 @@ class BinaryConcept:
 
     def check_positive_presence(self, env: Env, observation: np.ndarray) -> bool:
         """
-        Check if an observation belongs to the positive set and append it if so.
+        Check if an observation belongs to the positive set and add it if so.
 
         Parameters
         ----------
@@ -58,7 +61,7 @@ class BinaryConcept:
         Raises
         ------
         ValueError
-            If `observation_presence_callback` is not provided during initialization.
+            If `observation_presence_callback` is not provided.
         """
         if not self.observation_presence_callback:
             raise ValueError("No observation callback provided in constructor")
@@ -69,7 +72,7 @@ class BinaryConcept:
 
     def check_negative_presence(self, env: Env, observation: np.ndarray) -> bool:
         """
-        Check if an observation belongs to the negative set and append it if so.
+        Check if an observation belongs to the negative set and add it if so.
 
         Parameters
         ----------
@@ -86,7 +89,7 @@ class BinaryConcept:
         Raises
         ------
         ValueError
-            If `observation_presence_callback` is not provided during initialization.
+            If `observation_presence_callback` is not provided.
         """
         if not self.observation_presence_callback:
             raise ValueError("No observation callback provided in constructor")
@@ -99,9 +102,7 @@ class BinaryConcept:
         """
         Save positive and negative examples to disk.
 
-        This method saves the positive and negative examples as `.npy` files
-        within the specified directory. The files are named
-        `<concept_name>_<num_positive/negative_examples>_positive/negative_examples.npy`.
+        The examples are saved as `.npy` files in the specified directory.
 
         Parameters
         ----------
@@ -115,7 +116,7 @@ class BinaryConcept:
         """
         Ensure that the save directory exists.
 
-        If the specified directory does not exist, it will be created.
+        If the specified directory does not exist, it is created.
 
         Parameters
         ----------
@@ -130,9 +131,7 @@ class BinaryConcept:
         """
         Save positive examples to disk.
 
-        Saves the positive examples as a `.npy` file within the specified
-        directory. If there are no positive examples, the method prints a message
-        and returns without saving.
+        The positive examples are saved as a `.npy` file in the specified directory.
 
         Parameters
         ----------
@@ -155,9 +154,7 @@ class BinaryConcept:
         """
         Save negative examples to disk.
 
-        Saves the negative examples as a `.npy` file within the specified
-        directory. If there are no negative examples, the method prints a message
-        and returns without saving.
+        The negative examples are saved as a `.npy` file in the specified directory.
 
         Parameters
         ----------
