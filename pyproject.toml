@@ -42,5 +42,5 @@ gem-collector = { path = "environments/gem_collector" }
 box-escape-lite = { path = "environments/box_escape_lite" }
 ccr = { path = "environments/ccr" }
 changing-supervisor = { path = "environments/changing_supervisor" }
-gold-run = { path = "environments/gold_run" }
 minecart-counter = { path = "environments/minecart_counter" }
+gold-run = { path = "environments/gold_run" }
