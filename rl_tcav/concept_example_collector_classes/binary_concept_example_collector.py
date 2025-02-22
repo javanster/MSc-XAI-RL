@@ -246,7 +246,7 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
             The number of examples to collect.
         """
 
-        def action_selection_callback(observation: np.ndarray):
+        def action_selection_callback(_: np.ndarray):
             action = int(np.random.randint(0, self.env.action_space.n))
             return action
 
