@@ -109,18 +109,15 @@ class ConceptExampleCollector(ABC):
         pass
 
     @abstractmethod
-    def save_examples(self, directory_path: str, prefix: str) -> None:
+    def save_examples(self, directory_path: str) -> None:
         """
         Save collected concept examples to disk.
 
-        Implementations should save the examples to files in the specified directory,
-        using the provided prefix for the filenames.
+        Implementations should save the examples to files in the specified directory.
 
         Parameters
         ----------
         directory_path : str
             The path to the directory where examples will be saved.
-        prefix : str
-            A prefix to use for the saved example files.
         """
         pass
