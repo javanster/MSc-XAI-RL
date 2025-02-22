@@ -1,7 +1,7 @@
 import os
 import random
 import time
-from typing import Callable, List, Optional, Tuple, cast
+from typing import Any, Callable, Dict, List, Optional, Tuple, cast
 
 import gymnasium as gym
 import numpy as np
@@ -18,6 +18,7 @@ from .custom_types.experience import Experience
 from .util_classes.observation_normalization_callbacks import ObservationNormalizationCallbacks
 from .util_classes.replay_buffer import ReplayBuffer
 from .util_classes.reward_queue import RewardQueue
+from .util_classes.test_logger import TestLogger
 from .util_classes.wandb_logger import WandbLogger
 
 
@@ -393,7 +394,9 @@ class DDQNAgent:
         truncated: bool = False
         return initial_state, episode_reward, terminated, truncated
 
-    def _perform_env_step_and_observe(self, action: int) -> Tuple[np.ndarray, float, bool, bool]:
+    def _perform_env_step_and_observe(
+        self, action: int
+    ) -> Tuple[np.ndarray, float, bool, bool, Dict[Any, Any]]:
         """
         Executes a step in the environment using the specified action and observes the results.
 
@@ -413,13 +416,15 @@ class DDQNAgent:
             - reward (float): The reward received from the environment for the action.
             - terminated (bool): Whether the episode has been terminated.
             - truncated (bool): Whether the episode has been truncated.
+            - info (Dict[Any, Any]): Info about the step
         """
-        new_state, reward, terminated, truncated, _ = self.env.step(action=action)
+        new_state, reward, terminated, truncated, info = self.env.step(action=action)
         new_state = cast(np.ndarray, new_state)
         reward = cast(float, reward)
         terminated = cast(bool, terminated)
         truncated = cast(bool, truncated)
-        return new_state, reward, terminated, truncated
+        info = cast(Dict[Any, Any], info)
+        return new_state, reward, terminated, truncated, info
 
     def _save_online_model(
         self,
@@ -578,8 +583,8 @@ class DDQNAgent:
                         epsilon=epsilon, current_state=current_state
                     )
 
-                    new_state, reward, terminated, truncated = self._perform_env_step_and_observe(
-                        action
+                    new_state, reward, terminated, truncated, _ = (
+                        self._perform_env_step_and_observe(action)
                     )
 
                     steps_passed += 1
@@ -673,7 +678,11 @@ class DDQNAgent:
             )
 
     def test(
-        self, model: Sequential, episodes: int = 10, env: Optional[Env] = None
+        self,
+        model: Sequential,
+        episodes: int = 10,
+        env: Optional[Env] = None,
+        test_logger: Optional[TestLogger] = None,
     ) -> Tuple[List[float], int, int]:
         """
         Tests the trained DDQN agent in the environment.
@@ -691,6 +700,8 @@ class DDQNAgent:
         env : Optional[gymnasium.Env], optional
             An optional environment instance to override the agent's current environment.
             If not provided, the agent's existing environment is used. Defaults to None.
+        test_logger : Optinal[TestLogger], optional
+            An optional test logger to keep track of metrics at each step during testing
 
         Returns
         -------
@@ -732,11 +743,20 @@ class DDQNAgent:
                         current_state=observation,
                     )
 
-                    observation, reward, terminated, truncated = self._perform_env_step_and_observe(
-                        action
+                    observation, reward, terminated, truncated, info = (
+                        self._perform_env_step_and_observe(action)
                     )
 
                     episode_reward += reward
+
+                    if test_logger:
+                        test_logger.log_step(
+                            observation=observation,
+                            reward=reward,
+                            terminated=terminated,
+                            truncated=truncated,
+                            info=info,
+                        )
 
                     if render:
                         self.env.render()
