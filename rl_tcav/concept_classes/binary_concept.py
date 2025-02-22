@@ -10,7 +10,8 @@ class BinaryConcept:
     A class to represent a binary concept with positive and negative examples.
 
     This class manages binary concepts by storing positive and negative observations
-    and provides methods for checking, retrieving, and saving these examples.
+    and provides methods for checking, retrieving, and saving these examples while
+    ensuring that duplicate examples are not stored.
 
     Attributes
     ----------
@@ -21,9 +22,9 @@ class BinaryConcept:
     observation_presence_callback : Callable[[Env], bool] or None
         A callback function to determine whether an observation belongs to the positive set.
     positive_examples : List[np.ndarray]
-        A list of positive observation examples.
+        A list of unique positive observation examples.
     negative_examples : List[np.ndarray]
-        A list of negative observation examples.
+        A list of unique negative observation examples.
     """
 
     def __init__(
@@ -46,6 +47,8 @@ class BinaryConcept:
         """
         Check if an observation belongs to the positive set and add it if so.
 
+        Ensures that duplicate positive examples are not stored.
+
         Parameters
         ----------
         env : Env
@@ -65,6 +68,8 @@ class BinaryConcept:
         """
         if not self.observation_presence_callback:
             raise ValueError("No observation callback provided in constructor")
+        if any(np.array_equal(observation, x) for x in self.positive_examples):
+            return False
         if self.observation_presence_callback(env):
             self.positive_examples.append(observation)
             return True
@@ -73,6 +78,8 @@ class BinaryConcept:
     def check_negative_presence(self, env: Env, observation: np.ndarray) -> bool:
         """
         Check if an observation belongs to the negative set and add it if so.
+
+        Ensures that duplicate negative examples are not stored.
 
         Parameters
         ----------
@@ -93,6 +100,8 @@ class BinaryConcept:
         """
         if not self.observation_presence_callback:
             raise ValueError("No observation callback provided in constructor")
+        if any(np.array_equal(observation, x) for x in self.negative_examples):
+            return False
         if not self.observation_presence_callback(env):
             self.negative_examples.append(observation)
             return True
@@ -100,7 +109,7 @@ class BinaryConcept:
 
     def save_examples(self, directory_path: str) -> None:
         """
-        Save positive and negative examples to disk.
+        Save unique positive and negative examples to disk.
 
         The examples are saved as `.npy` files in the specified directory.
 
@@ -129,7 +138,7 @@ class BinaryConcept:
 
     def _save_positive_examples(self, directory_path: str):
         """
-        Save positive examples to disk.
+        Save unique positive examples to disk.
 
         The positive examples are saved as a `.npy` file in the specified directory.
 
@@ -152,7 +161,7 @@ class BinaryConcept:
 
     def _save_negative_examples(self, directory_path: str):
         """
-        Save negative examples to disk.
+        Save unique negative examples to disk.
 
         The negative examples are saved as a `.npy` file in the specified directory.
 
