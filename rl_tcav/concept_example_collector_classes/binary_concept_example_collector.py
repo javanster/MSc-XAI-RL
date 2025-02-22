@@ -94,17 +94,7 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
             The number of examples to collect per concept.
         action_selection_callback : Callable[[np.ndarray], int]
             A function that determines the action to take based on the current observation.
-
-        Raises
-        ------
-        ValueError
-            If the instance does not have a normalization callback.
         """
-        if not self.normalization_callback:
-            raise ValueError(
-                "This instance of BinaryConceptExampleCollector was not given a normalization callback in its constructor."
-            )
-
         with tqdm(total=len(self.concepts) * example_n, unit="example") as pbar:
             example_count_per_class = example_n // 2
 
@@ -175,7 +165,14 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
             The number of examples to collect.
         model : Sequential
             The model used to determine the best actions.
+
+        Raises
+        ------
+        ValueError
+            If the instance does not have a normalization callback.
         """
+        if not self.normalization_callback:
+            raise ValueError("Normalization callback is required for model-based play.")
 
         def action_selection_callback(observation: np.ndarray):
             observation_reshaped = self.normalization_callback(
@@ -213,7 +210,11 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
         ------
         ValueError
             If epsilon is not within the range (0,1).
+        ValueError
+            If the instance does not have a normalization callback.
         """
+        if not self.normalization_callback:
+            raise ValueError("Normalization callback is required for model-based play.")
 
         if epsilon >= 1 or epsilon <= 0:
             raise ValueError("Provided epsilon must be within the interval (0,1).")
@@ -264,8 +265,6 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
         ----------
         directory_path : str
             The path to the directory where examples will be saved.
-        prefix : str
-            A prefix to use for the saved example files.
         """
         for concept in self.concepts:
             concept.save_examples(directory_path=directory_path)
