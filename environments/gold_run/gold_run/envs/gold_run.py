@@ -66,7 +66,7 @@ class GoldRun(Env):
             shape=(self.grid_side_length, self.grid_side_length, 3),
             dtype=np.uint8,
         )
-        self.window_size: int = 600
+        self.window_size: int = 900
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode: Optional[str] = render_mode
         self.window = None
