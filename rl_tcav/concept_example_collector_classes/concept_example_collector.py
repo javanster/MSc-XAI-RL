@@ -34,7 +34,7 @@ class ConceptExampleCollector(ABC):
     Raises
     ------
     ValueError
-        If the provided normalization_callback is not a valid key.
+        If the provided normalization_callback is not a valid key, if it is not None.
     """
 
     def __init__(
@@ -45,6 +45,7 @@ class ConceptExampleCollector(ABC):
         self.env: Env = env
         if (
             normalization_callback
+            and normalization_callback
             not in ObservationNormalizationCallbacks.normalization_callbacks.keys()
         ):
             raise ValueError(
