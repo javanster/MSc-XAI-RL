@@ -1,96 +1,126 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Dict, Optional, Union
+from typing import Optional
 
 from gymnasium import Env
+from keras.api.models import Sequential
 
-CollectionMethod = Union[Callable[[int], None], Callable[[int, float], None]]
+from agents import ObservationNormalizationCallbacks
 
 
 class ConceptExampleCollector(ABC):
     """
     Abstract base class for collecting and managing concept examples.
 
+    This class defines an interface for collecting concept examples from an environment
+    using different strategies. It also supports applying an observation normalization
+    callback if specified.
+
     Attributes
     ----------
     env : Env
         The environment instance used to collect examples.
+    normalization_callback : callable or None
+        The callback function used to normalize observations, if provided.
+
+    Parameters
+    ----------
+    env : Env
+        The environment instance from which to collect examples.
+    normalization_callback : str, optional
+        The key for selecting the normalization callback. It must be one of the keys in
+        ObservationNormalizationCallbacks.normalization_callbacks. If not provided, no
+        normalization is applied.
+
+    Raises
+    ------
+    ValueError
+        If the provided normalization_callback is not a valid key.
     """
 
-    def __init__(self, env: Env) -> None:
+    def __init__(
+        self,
+        env: Env,
+        normalization_callback: Optional[str] = None,
+    ) -> None:
         self.env: Env = env
-        self._concept_examples_collecting_methods: Dict[str, CollectionMethod] = {
-            "model_greedy_play": self._model_greedy_play_collect_examples,
-            "model_epsilon_play": self._model_epsilon_play_collect_examples,
-            "random_policy_play": self._random_policy_play_collect_examples,
-        }
+        if (
+            normalization_callback
+            not in ObservationNormalizationCallbacks.normalization_callbacks.keys()
+        ):
+            raise ValueError(
+                f"Provided normalization_callback is not valid, please provide one of the following: "
+                f"{[callback_name for callback_name in ObservationNormalizationCallbacks.normalization_callbacks.keys()]}"
+            )
+        if normalization_callback:
+            self.normalization_callback = ObservationNormalizationCallbacks.normalization_callbacks[
+                normalization_callback
+            ]
 
     @abstractmethod
-    def _model_greedy_play_collect_examples(self, example_n: int) -> None:
+    def model_greedy_play_collect_examples(self, example_n: int, model: Sequential) -> None:
         """
-        Collect examples using a model greedy play strategy.
+        Collect examples using a model-based greedy play strategy.
+
+        The method should use the provided model to select actions greedily based on
+        predicted outcomes.
 
         Parameters
         ----------
         example_n : int
             The number of examples to collect.
+        model : Sequential
+            The model used to determine the best actions.
         """
         pass
 
     @abstractmethod
-    def _model_epsilon_play_collect_examples(self, example_n: int, epsilon: float) -> None:
+    def model_epsilon_play_collect_examples(
+        self, example_n: int, model: Sequential, epsilon: float
+    ) -> None:
         """
-        Collect examples using a model epsilon-greedy play strategy, where epsilon is the chance
-        of taking a random action.
+        Collect examples using a model-based epsilon-greedy play strategy.
+
+        This strategy combines greedy action selection with random exploration. The
+        epsilon parameter defines the probability of taking a random action.
 
         Parameters
         ----------
         example_n : int
             The number of examples to collect.
+        model : Sequential
+            The model used to predict actions.
         epsilon : float
-            The exploration rate to use.
+            The exploration rate (probability of choosing a random action).
         """
         pass
 
     @abstractmethod
-    def _random_policy_play_collect_examples(self, example: int) -> None:
+    def random_policy_play_collect_examples(self, example_n: int) -> None:
         """
         Collect examples using a random policy play strategy.
 
-        Parameters
-        ----------
-        example : int
-            The number of examples to collect.
-        """
-        pass
-
-    @abstractmethod
-    def collect_examples(
-        self, example_n: int, method: str = "model_greedy_play", epsilon: Optional[float] = None
-    ) -> None:
-        """
-        Collect concept examples using the specified method.
+        The method should collect examples by selecting actions randomly.
 
         Parameters
         ----------
         example_n : int
             The number of examples to collect.
-        method : str, optional
-            The collection method to use (default is "model_greedy_play").
-        epsilon : float, optional
-            The exploration rate for epsilon play, if applicable.
         """
         pass
 
     @abstractmethod
-    def save_examples(self, directory_path: str, example_prefix: str) -> None:
+    def save_examples(self, directory_path: str, prefix: str) -> None:
         """
         Save collected concept examples to disk.
+
+        Implementations should save the examples to files in the specified directory,
+        using the provided prefix for the filenames.
 
         Parameters
         ----------
         directory_path : str
             The path to the directory where examples will be saved.
-        example_prefix : str
+        prefix : str
             A prefix to use for the saved example files.
         """
         pass
