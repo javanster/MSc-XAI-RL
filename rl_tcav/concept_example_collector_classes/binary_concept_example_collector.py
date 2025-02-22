@@ -119,7 +119,7 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
                     len(concept.positive_examples) < example_count_per_class
                     or len(concept.negative_examples) < example_count_per_class
                 ):
-                    if iterations > self.max_iter_per_concept:
+                    if iterations >= self.max_iter_per_concept:
                         print(
                             f"Max iterations ({self.max_iter_per_concept}) reached when collecting examples for concept {concept.name}. Moving on to the next concept..."
                         )
@@ -145,6 +145,7 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
 
                     if terminated or truncated:
                         observation, _ = self.env.reset()
+                        terminated, truncated = False, False
                     else:
                         action = action_selection_callback(observation)
                         observation, _, terminated, truncated, _ = self.env.step(action)
@@ -152,6 +153,15 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
                     iterations += 1
 
             self.env.close()
+
+            print("\n\n=================================================")
+            print("Concept example collection complete. Results:\n")
+
+            for concept in self.concepts:
+                print(
+                    f"{concept.name}: {len(concept.positive_examples)} positive and {len(concept.negative_examples)} negative concept examples gathered"
+                )
+            print("\n=================================================\n")
 
     def model_greedy_play_collect_examples(self, example_n: int, model: Sequential) -> None:
         """
@@ -243,7 +253,7 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
             example_n=example_n, action_selection_callback=action_selection_callback
         )
 
-    def save_examples(self, directory_path: str, prefix: str) -> None:
+    def save_examples(self, directory_path: str) -> None:
         """
         Save collected examples for all binary concepts to disk.
 
