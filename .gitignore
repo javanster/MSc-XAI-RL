@@ -131,6 +131,7 @@ env.bak/
 venv.bak/
 wandb/
 models/
+rl_tcav_data/
 
 # Spyder project settings
 .spyderproject
