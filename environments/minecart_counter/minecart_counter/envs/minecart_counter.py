@@ -19,8 +19,8 @@ class MinecartCounter(Env):
 
     There are eight goals which each terminate the episode when reached by the agent. The reward received
     is based on whether the goal was the correct one or not. Each episode, one of the goals is selected
-    as the correct one at random. The chosen goal decides how many boxes are placed in the
-    environment, making the number of boxes a direct indication of which goal is correct.
+    as the correct one at random. The chosen goal decides how many minecarts are placed in the
+    environment, making the number of minecarts a direct indication of which goal is correct.
     """
 
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
@@ -29,7 +29,7 @@ class MinecartCounter(Env):
         self,
         render_mode: Optional[LiteralString] = None,
         render_fps: int = 4,
-        scatter_boxes: bool = False,
+        scatter_minecarts: bool = True,
         render_raw_pixels: bool = False,
     ) -> None:
         super().__init__()
@@ -37,16 +37,16 @@ class MinecartCounter(Env):
 
         self.AGENT_COLOR: Tuple[int, int, int] = (78, 172, 248)
         self.WALL_COLOR: Tuple[int, int, int] = (77, 77, 77)
-        self.BOX_COLOR: Tuple[int, int, int] = (255, 180, 65)
+        self.MINECART_COLOR: Tuple[int, int, int] = (255, 180, 65)
         self.GOAL_COLORS: Dict[int, Tuple[int, int, int]] = {
-            1: (165, 172, 31),  # Correct goal if 1 box = 1 * 31 = 31
-            2: (165, 172, 62),  # Correct goal if 2 boxes = 2 * 31 = 62
-            3: (165, 172, 93),  # Correct goal if 3 boxes = 3 * 31 = 93
-            4: (165, 172, 124),  # Correct goal if 4 boxes = 4 * 31 = 124
-            5: (165, 172, 155),  # Correct goal if 5 boxes = 5 * 31 = 155
-            6: (165, 172, 186),  # Correct goal if 6 boxes = 6 * 31 = 186
-            7: (165, 172, 217),  # Correct goal if 7 boxes = 7 * 31 = 217
-            8: (165, 172, 248),  # Correct goal if 8 boxes = 8 * 31 = 248
+            1: (165, 172, 31),  # Correct goal if 1 minecart = 1 * 31 = 31
+            2: (165, 172, 62),  # Correct goal if 2 minecarts = 2 * 31 = 62
+            3: (165, 172, 93),  # Correct goal if 3 minecarts = 3 * 31 = 93
+            4: (165, 172, 124),  # Correct goal if 4 minecarts = 4 * 31 = 124
+            5: (165, 172, 155),  # Correct goal if 5 minecarts = 5 * 31 = 155
+            6: (165, 172, 186),  # Correct goal if 6 minecarts = 6 * 31 = 186
+            7: (165, 172, 217),  # Correct goal if 7 minecarts = 7 * 31 = 217
+            8: (165, 172, 248),  # Correct goal if 8 minecarts = 8 * 31 = 248
         }
         self.GOAL_POSITIONS: Dict[int, Tuple[int, int]] = {
             1: (7, 0),
@@ -58,7 +58,7 @@ class MinecartCounter(Env):
             7: (0, 7),
             8: (1, 1),
         }
-        self.SCATTER_BOXES: bool = scatter_boxes
+        self.SCATTER_MINECARTS: bool = scatter_minecarts
         self.render_raw_pixels = render_raw_pixels
         self.SPRITE_MODULE_PATH: str = "minecart_counter.envs.sprites"
 
@@ -112,34 +112,34 @@ class MinecartCounter(Env):
                 )
             )
 
-    def _place_boxes_scattered(self, boxes_n: int) -> None:
-        for _ in range(boxes_n):
-            box_pos = random.choice(self.empty_cells)
-            self.boxes.append(
+    def _place_minecarts_scattered(self, minecarts_n: int) -> None:
+        for _ in range(minecarts_n):
+            minecart_pos = random.choice(self.empty_cells)
+            self.minecarts.append(
                 Entity(
                     grid_side_length=self.grid_side_length,
-                    color=self.BOX_COLOR,
-                    starting_position=(box_pos),
+                    color=self.MINECART_COLOR,
+                    starting_position=(minecart_pos),
                 )
             )
-            self.empty_cells.remove(box_pos)
+            self.empty_cells.remove(minecart_pos)
 
-    def _place_boxes_clustered(self, boxes_n: int) -> None:
-        first_box_pos: Tuple[int, int] = random.choice(self.empty_cells)
-        self.boxes.append(
+    def _place_minecarts_clustered(self, minecarts_n: int) -> None:
+        first_minecart_pos: Tuple[int, int] = random.choice(self.empty_cells)
+        self.minecarts.append(
             Entity(
                 grid_side_length=self.grid_side_length,
-                color=self.BOX_COLOR,
-                starting_position=(first_box_pos),
+                color=self.MINECART_COLOR,
+                starting_position=(first_minecart_pos),
             )
         )
-        self.empty_cells.remove(first_box_pos)
+        self.empty_cells.remove(first_minecart_pos)
 
-        while len(self.boxes) < boxes_n:
+        while len(self.minecarts) < minecarts_n:
             adjacent_positions = set()
-            for box in self.boxes:
+            for minecart in self.minecarts:
                 for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:  # Up, down, left, right
-                    nx, ny = box.x + dx, box.y + dy
+                    nx, ny = minecart.x + dx, minecart.y + dy
                     if (nx, ny) in self.empty_cells:
                         adjacent_positions.add((nx, ny))
 
@@ -148,24 +148,24 @@ class MinecartCounter(Env):
                 break
 
             # Choose a random position from the available adjacent positions
-            next_box_pos = random.choice(list(adjacent_positions))
-            self.boxes.append(
+            next_minecart_pos = random.choice(list(adjacent_positions))
+            self.minecarts.append(
                 Entity(
                     grid_side_length=self.grid_side_length,
-                    color=self.BOX_COLOR,
-                    starting_position=(next_box_pos),
+                    color=self.MINECART_COLOR,
+                    starting_position=(next_minecart_pos),
                 )
             )
-            self.empty_cells.remove(next_box_pos)
+            self.empty_cells.remove(next_minecart_pos)
 
-    def _place_boxes(self) -> None:
-        self.boxes: List[Entity] = []
-        boxes_n: int = self.target_direction
+    def _place_minecarts(self) -> None:
+        self.minecarts: List[Entity] = []
+        minecarts_n: int = self.target_direction
 
-        if self.SCATTER_BOXES:
-            self._place_boxes_scattered(boxes_n=boxes_n)
+        if self.SCATTER_MINECARTS:
+            self._place_minecarts_scattered(minecarts_n=minecarts_n)
         else:
-            self._place_boxes_clustered(boxes_n=boxes_n)
+            self._place_minecarts_clustered(minecarts_n=minecarts_n)
 
     def reset(
         self,
@@ -180,7 +180,7 @@ class MinecartCounter(Env):
         ]
 
         self._place_static_objects()
-        self._place_boxes()
+        self._place_minecarts()
 
         agent_starting_pos = (7, 7)
         self.agent = Entity(
@@ -201,8 +201,8 @@ class MinecartCounter(Env):
             obs[wall.y, wall.x] = self.WALL_COLOR
         for goal in self.goals:
             obs[goal.y, goal.x] = goal.color
-        for box in self.boxes:
-            obs[box.y, box.x] = box.color
+        for minecart in self.minecarts:
+            obs[minecart.y, minecart.x] = minecart.color
         obs[self.agent.y, self.agent.x] = self.AGENT_COLOR
 
         return obs
@@ -218,8 +218,8 @@ class MinecartCounter(Env):
                 self.agent.x = original_agent_x
                 self.agent.y = original_agent_y
 
-        for box in self.boxes:
-            if self.agent == box:
+        for minecart in self.minecarts:
+            if self.agent == minecart:
                 self.agent.x = original_agent_x
                 self.agent.y = original_agent_y
 
@@ -322,15 +322,15 @@ class MinecartCounter(Env):
                 ),
             )
 
-        for i, box in enumerate(self.boxes):
-            box_sprite = sprites["minecart"]
+        for i, minecart in enumerate(self.minecarts):
+            minecart_sprite = sprites["minecart"]
             self._scale_and_blit_sprite(
                 canvas=canvas,
-                sprite=box_sprite,
+                sprite=minecart_sprite,
                 pix_square_size=pix_square_size,
                 flip_horizontally=self.minecart_horizontal_flips[i],
-                x=box.x,
-                y=box.y,
+                x=minecart.x,
+                y=minecart.y,
             )
 
         for i, goal in enumerate(self.goals):
