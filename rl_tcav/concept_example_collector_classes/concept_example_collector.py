@@ -1,22 +1,33 @@
 from abc import ABC, abstractmethod
+from typing import Callable, Dict, Optional, Union
+
+from gymnasium import Env
+
+CollectionMethod = Union[Callable[[int], None], Callable[[int, float], None]]
 
 
 class ConceptExampleCollector(ABC):
     """
     Abstract base class for collecting and managing concept examples.
 
-    This class defines the interface for collecting concept examples
-    from an environment, managing them, and saving them to disk.
-    Subclasses must implement the abstract methods.
+    Attributes
+    ----------
+    env : Env
+        The environment instance used to collect examples.
     """
 
-    @abstractmethod
-    def _env_reset_collect_concept_examples(self, example_n: int) -> None:
-        """
-        Collect concept examples by resetting the environment.
+    def __init__(self, env: Env) -> None:
+        self.env: Env = env
+        self._concept_examples_collecting_methods: Dict[str, CollectionMethod] = {
+            "model_greedy_play": self._model_greedy_play_collect_examples,
+            "model_epsilon_play": self._model_epsilon_play_collect_examples,
+            "random_policy_play": self._random_policy_play_collect_examples,
+        }
 
-        This method should be implemented to collect a specific number
-        of examples by resetting the environment.
+    @abstractmethod
+    def _model_greedy_play_collect_examples(self, example_n: int) -> None:
+        """
+        Collect examples using a model greedy play strategy.
 
         Parameters
         ----------
@@ -26,33 +37,60 @@ class ConceptExampleCollector(ABC):
         pass
 
     @abstractmethod
-    def collect_examples(self, example_n: int, method: str = "env_reset") -> None:
+    def _model_epsilon_play_collect_examples(self, example_n: int, epsilon: float) -> None:
         """
-        Collect concept examples using a specified method.
+        Collect examples using a model epsilon-greedy play strategy, where epsilon is the chance
+        of taking a random action.
 
-        Subclasses should implement this method to support different
-        collection methods.
+        Parameters
+        ----------
+        example_n : int
+            The number of examples to collect.
+        epsilon : float
+            The exploration rate to use.
+        """
+        pass
+
+    @abstractmethod
+    def _random_policy_play_collect_examples(self, example: int) -> None:
+        """
+        Collect examples using a random policy play strategy.
+
+        Parameters
+        ----------
+        example : int
+            The number of examples to collect.
+        """
+        pass
+
+    @abstractmethod
+    def collect_examples(
+        self, example_n: int, method: str = "model_greedy_play", epsilon: Optional[float] = None
+    ) -> None:
+        """
+        Collect concept examples using the specified method.
 
         Parameters
         ----------
         example_n : int
             The number of examples to collect.
         method : str, optional
-            The method used to collect examples. Default is "env_reset".
+            The collection method to use (default is "model_greedy_play").
+        epsilon : float, optional
+            The exploration rate for epsilon play, if applicable.
         """
         pass
 
     @abstractmethod
-    def save_examples(self, directory_path: str) -> None:
+    def save_examples(self, directory_path: str, example_prefix: str) -> None:
         """
         Save collected concept examples to disk.
-
-        Subclasses should implement this method to save collected examples
-        to the specified directory in an appropriate format.
 
         Parameters
         ----------
         directory_path : str
             The path to the directory where examples will be saved.
+        example_prefix : str
+            A prefix to use for the saved example files.
         """
         pass
