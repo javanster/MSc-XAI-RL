@@ -33,7 +33,8 @@ class GoldRun(Env):
         self,
         render_mode: Optional[LiteralString] = None,
         render_fps: int = 4,
-        render_raw_pixels=False,
+        render_raw_pixels: bool = False,
+        disable_early_termination: bool = False,
     ) -> None:
         super().__init__()
         self.name = "gold_run"
@@ -56,6 +57,7 @@ class GoldRun(Env):
         self.PASSAGE_REWARD = 0.263
         self.EARLY_TERM_PASSAGE_REWARD = 0.263
 
+        self.disable_early_termination = disable_early_termination
         self.wall_sprite_indexes = [random.randint(1, 3) for _ in range(51)]
         self.render_fps: int = render_fps
         self.grid_side_length: int = 15
@@ -282,7 +284,11 @@ class GoldRun(Env):
                 self.current_room = self.current_room + 1
                 self._next_room(self.current_room)
 
-        if self.early_term_passage and self.agent == self.early_term_passage:
+        if (
+            not self.disable_early_termination
+            and self.early_term_passage
+            and self.agent == self.early_term_passage
+        ):
             reward += self.EARLY_TERM_PASSAGE_REWARD
             terminated = True
 
