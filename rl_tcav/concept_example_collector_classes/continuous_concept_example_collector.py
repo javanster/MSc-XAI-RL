@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional
+from typing import Callable, Dict, List, Optional
 
 import numpy as np
 from gymnasium import Env
@@ -95,6 +95,8 @@ class ContinuousConceptExampleCollector(ConceptExampleCollector):
             A function that determines the action to take based on the current observation.
         """
         with tqdm(total=len(self.concepts) * example_n, unit="example") as pbar:
+            self.examples_accumulated = {concept.name: [] for concept in self.concepts}
+
             for concept in self.concepts:
                 observation, _ = self.env.reset()
                 terminated = False
@@ -114,6 +116,10 @@ class ContinuousConceptExampleCollector(ConceptExampleCollector):
 
                     if concept_collected:
                         pbar.update(1)
+
+                    if self.track_example_accumulation:
+                        pos_examples = self.examples_accumulated[concept.name]
+                        pos_examples.append(len(concept.examples))
 
                     if terminated or truncated:
                         observation, _ = self.env.reset()
@@ -250,3 +256,54 @@ class ContinuousConceptExampleCollector(ConceptExampleCollector):
         """
         for concept in self.concepts:
             concept.save_examples(directory_path=directory_path)
+
+    def get_example_accumulation_data(self) -> Dict[str, List[int]]:
+        """
+        Retrieve accumulated example data.
+
+        Returns
+        -------
+        tuple
+            A dict containing accumulated examples counts over iterations for each concept.
+
+        Raises
+        ------
+        ValueError
+            If accumulation data is not available.
+        """
+        if not self.examples_accumulated:
+            raise ValueError(
+                "No accumulation data found. Did you remember to initialize the example collector with 'track_example_accumulation' set to True, and have you run collection?"
+            )
+        return self.examples_accumulated
+
+    def save_example_accumulation_data(self, directory_path: str) -> None:
+        """
+        Save accumulated example data for all continuous concepts to disk.
+
+        This method saves the example accumulation data
+        as `.npy` files in the specified directory.
+
+        Parameters
+        ----------
+        directory_path : str
+            The path to the directory where the accumulation data will be saved.
+
+        Raises
+        ------
+        ValueError
+            If no accumulation data is found, either because tracking was not enabled
+            or collection has not been performed.
+        """
+        if not self.examples_accumulated:
+            raise ValueError(
+                "No accumulation data found. Did you remember to initialize the example collector with 'track_example_accumulation' set to True, and have you run collection?"
+            )
+        self._ensure_save_directory_exists(directory_path=directory_path)
+        for concept_name in self.examples_accumulated.keys():
+            file_path = f"{directory_path}/continuous_concept_{concept_name}_{len(self.examples_accumulated[concept_name])}_examples_accumulation_data.npy"
+            array = np.array(self.examples_accumulated[concept_name])
+            np.save(file_path, array)
+            print(
+                f"Accumulation data for examples of concept {concept_name} successfully saved to {file_path}."
+            )
