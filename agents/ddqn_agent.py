@@ -683,6 +683,7 @@ class DDQNAgent:
         episodes: int = 10,
         env: Optional[Env] = None,
         test_logger: Optional[TestLogger] = None,
+        epsilon: float = -1,
     ) -> Tuple[List[float], int, int]:
         """
         Tests the trained DDQN agent in the environment.
@@ -702,6 +703,10 @@ class DDQNAgent:
             If not provided, the agent's existing environment is used. Defaults to None.
         test_logger : Optinal[TestLogger], optional
             An optional test logger to keep track of metrics at each step during testing
+        epsilon: float
+            The epsilon value for selecting random actions. Must be within the range [-inf, 1].
+            A negative epsilon is equivalent to model determinitsic play, while an epsilon value of
+            1 equals fully random play.
 
         Returns
         -------
@@ -739,7 +744,7 @@ class DDQNAgent:
 
                 while not terminated and not truncated:
                     action = self._choose_action_epsilon_greedy(
-                        epsilon=-1,  # Negative epsilon ensures that a random action is never taken
+                        epsilon=epsilon,
                         current_state=observation,
                     )
 
