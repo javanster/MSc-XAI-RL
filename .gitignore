@@ -132,7 +132,7 @@ venv.bak/
 wandb/
 models/
 rl_tcav_data/
-idun_scripts/
+scripts_idun/
 
 # Spyder project settings
 .spyderproject
