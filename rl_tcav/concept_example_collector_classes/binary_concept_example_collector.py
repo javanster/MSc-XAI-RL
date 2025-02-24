@@ -25,8 +25,11 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
         A list of BinaryConcept objects for which examples are collected.
     max_iter_per_concept : int
         The maximum number of iterations per concept during data collection.
-    normalization_callback : callable or None
+    normalization_callback : Callable, optional
         A function used to normalize observations before passing them to the model.
+    track_example_accumulation : bool
+        Whether to track the accumulation of examples over time.
+
 
     Parameters
     ----------
@@ -38,6 +41,8 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
         The maximum number of iterations per concept during data collection.
     normalization_callback : str, optional
         The key for selecting the normalization callback. If not provided, no normalization is applied.
+    track_example_accumulation : bool
+        Whether to track the accumulation of examples over time.
 
     Raises
     ------
@@ -51,8 +56,13 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
         concepts: List[BinaryConcept],
         max_iter_per_concept: int,
         normalization_callback: Optional[str] = None,
+        track_example_accumulation=False,
     ) -> None:
-        super().__init__(env=env, normalization_callback=normalization_callback)
+        super().__init__(
+            env=env,
+            normalization_callback=normalization_callback,
+            track_example_accumulation=track_example_accumulation,
+        )
         self.max_iter_per_concept = max_iter_per_concept
         self._verify_no_concept_examples(concepts=concepts)
         self.concepts: List[BinaryConcept] = concepts
@@ -98,6 +108,9 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
         with tqdm(total=len(self.concepts) * example_n, unit="example") as pbar:
             example_count_per_class = example_n // 2
 
+            self.pos_examples_accumulated = {concept.name: [] for concept in self.concepts}
+            self.neg_examples_accumulated = {concept.name: [] for concept in self.concepts}
+
             for concept in self.concepts:
                 observation, _ = self.env.reset()
                 terminated = False
@@ -133,6 +146,12 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
                     if positive_presence or negative_presence:
                         pbar.update(1)
 
+                    if self.track_example_accumulation:
+                        pos_examples = self.pos_examples_accumulated[concept.name]
+                        pos_examples.append(len(concept.positive_examples))
+                        neg_examples = self.neg_examples_accumulated[concept.name]
+                        neg_examples.append(len(concept.negative_examples))
+
                     if terminated or truncated:
                         observation, _ = self.env.reset()
                         terminated, truncated = False, False
@@ -141,6 +160,7 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
                         observation, _, terminated, truncated, _ = self.env.step(action)
 
                     iterations += 1
+                    print(f"ITERATION: {iterations}")
 
             self.env.close()
 
@@ -156,8 +176,6 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
     def model_greedy_play_collect_examples(self, example_n: int, model: Sequential) -> None:
         """
         Collect examples using a model-based greedy action selection strategy.
-
-        The method selects actions greedily based on the Q-values predicted by the model.
 
         Parameters
         ----------
@@ -191,10 +209,6 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
     ) -> None:
         """
         Collect examples using a model-based epsilon-greedy action selection strategy.
-
-        The method selects actions greedily with probability (1 - epsilon) and takes
-        a random action with probability epsilon. This allows for a balance between
-        exploration and exploitation during example collection.
 
         Parameters
         ----------
@@ -268,3 +282,62 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
         """
         for concept in self.concepts:
             concept.save_examples(directory_path=directory_path)
+
+    def get_example_accumulation_data(self):
+        """
+        Retrieve accumulated example data.
+
+        Returns
+        -------
+        tuple
+            A tuple containing accumulated positive and negative examples.
+
+        Raises
+        ------
+        ValueError
+            If accumulation data is not available.
+        """
+        if not self.pos_examples_accumulated or not self.neg_examples_accumulated:
+            raise ValueError(
+                "No accumulation data found. Did you remember to initialize the example collector with 'track_example_accumulation' set to True, and have you run collection?"
+            )
+        return self.pos_examples_accumulated, self.neg_examples_accumulated
+
+    def save_example_accumulation_data(self, directory_path: str):
+        """
+        Save accumulated example data for all binary concepts to disk.
+
+        This method saves the positive and negative example accumulation data
+        as `.npy` files in the specified directory.
+
+        Parameters
+        ----------
+        directory_path : str
+            The path to the directory where the accumulation data will be saved.
+
+        Raises
+        ------
+        ValueError
+            If no accumulation data is found, either because tracking was not enabled
+            or collection has not been performed.
+        """
+        if not self.pos_examples_accumulated or not self.neg_examples_accumulated:
+            raise ValueError(
+                "No accumulation data found. Did you remember to initialize the example collector with 'track_example_accumulation' set to True, and have you run collection?"
+            )
+        self._ensure_save_directory_exists(directory_path=directory_path)
+        for concept_name in self.pos_examples_accumulated.keys():
+            positive_file_path = f"{directory_path}/binary_concept_{concept_name}_{len(self.pos_examples_accumulated[concept_name])}_positive_examples_accumulation_data.npy"
+            positive_array = np.array(self.pos_examples_accumulated[concept_name])
+            np.save(positive_file_path, positive_array)
+            print(
+                f"Accumulation data for positive examples of concept {concept_name} successfully saved to {positive_file_path}."
+            )
+
+        for concept_name in self.neg_examples_accumulated.keys():
+            negative_file_path = f"{directory_path}/binary_concept_{concept_name}_{len(self.neg_examples_accumulated[concept_name])}_negative_examples_accumulation_data.npy"
+            negative_array = np.array(self.neg_examples_accumulated[concept_name])
+            np.save(negative_file_path, negative_array)
+            print(
+                f"Accumulation data for negative examples of concept {concept_name} successfully saved to {negative_file_path}."
+            )
