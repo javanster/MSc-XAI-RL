@@ -181,6 +181,7 @@ class MinecartCounter(Env):
 
         self._place_static_objects()
         self._place_minecarts()
+        self.agent_going_left = True
 
         agent_starting_pos = (7, 7)
         self.agent = Entity(
@@ -209,6 +210,11 @@ class MinecartCounter(Env):
 
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, bool, Dict[Any, Any]]:
         self.episode_step += 1
+
+        if action in [1, 2, 3]:
+            self.agent_going_left = False
+        elif action in [5, 6, 7]:
+            self.agent_going_left = True
 
         original_agent_x = self.agent.x
         original_agent_y = self.agent.y
@@ -350,6 +356,7 @@ class MinecartCounter(Env):
             pix_square_size=pix_square_size,
             x=self.agent.x,
             y=self.agent.y,
+            flip_horizontally=self.agent_going_left,
         )
 
     def _scale_and_blit_sprite(
