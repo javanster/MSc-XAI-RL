@@ -5,7 +5,6 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "avocado-run",
     "black>=24.10.0",
     "box-escape-lite",
     "box2d-py>=2.3.8",
@@ -38,7 +37,6 @@ profile = "black"
 line_length = 100
 
 [tool.uv.sources]
-avocado-run = { path = "environments/avocado_run" }
 gem-collector = { path = "environments/gem_collector" }
 box-escape-lite = { path = "environments/box_escape_lite" }
 ccr = { path = "environments/ccr" }
