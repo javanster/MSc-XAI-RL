@@ -1,3 +1,4 @@
+import os
 from abc import ABC, abstractmethod
 from typing import Optional
 
@@ -30,6 +31,9 @@ class ConceptExampleCollector(ABC):
         The key for selecting the normalization callback. It must be one of the keys in
         ObservationNormalizationCallbacks.normalization_callbacks. If not provided, no
         normalization is applied.
+    track_example_accumulation: bool
+        Whether the number of examples collected over iterations should be tracked.
+        Defaults to False.
 
     Raises
     ------
@@ -41,6 +45,7 @@ class ConceptExampleCollector(ABC):
         self,
         env: Env,
         normalization_callback: Optional[str] = None,
+        track_example_accumulation: bool = False,
     ) -> None:
         self.env: Env = env
         if (
@@ -56,6 +61,7 @@ class ConceptExampleCollector(ABC):
             self.normalization_callback = ObservationNormalizationCallbacks.normalization_callbacks[
                 normalization_callback
             ]
+        self.track_example_accumulation = track_example_accumulation
 
     @abstractmethod
     def model_greedy_play_collect_examples(self, example_n: int, model: Sequential) -> None:
@@ -122,3 +128,18 @@ class ConceptExampleCollector(ABC):
             The path to the directory where examples will be saved.
         """
         pass
+
+    def _ensure_save_directory_exists(self, directory_path: str) -> None:
+        """
+        Ensure that the save directory exists.
+
+        If the specified directory does not exist, it is created.
+
+        Parameters
+        ----------
+        directory_path : str
+            The path to the directory to check or create.
+        """
+        directory = os.path.dirname(directory_path)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
