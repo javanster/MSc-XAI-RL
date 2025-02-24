@@ -35,6 +35,7 @@ class GoldRunMini(Env):
         render_fps: int = 4,
         render_raw_pixels: bool = False,
         disable_early_termination: bool = False,
+        only_second_room: bool = False,
     ) -> None:
         super().__init__()
         self.name = "gold_run"
@@ -58,6 +59,7 @@ class GoldRunMini(Env):
         self.EARLY_TERM_PASSAGE_REWARD = 0.2617
 
         self.disable_early_termination = disable_early_termination
+        self.only_second_room = only_second_room
         self.wall_sprite_indexes = [random.randint(1, 3) for _ in range(36)]
         self.render_fps: int = render_fps
         self.grid_side_length: int = 11
@@ -187,10 +189,10 @@ class GoldRunMini(Env):
     ) -> Tuple[np.ndarray, Dict[Any, Any]]:
         super().reset(seed=seed)
 
-        self.current_room = 1
+        self.current_room = 2 if self.only_second_room else 1
         self.current_passage_position = random.choice(self.VALID_PASSAGE_POSITIONS)
         self.lava: List[Entity] = []
-        self._next_room(1)
+        self._next_room(self.current_room)
 
         self.passage: Entity | None = Entity(
             grid_side_length=self.grid_side_length,
@@ -198,11 +200,14 @@ class GoldRunMini(Env):
             starting_position=self.current_passage_position,
         )
 
-        self.early_term_passage: Entity | None = Entity(
-            color=self.CLOSED_EARLY_TERMINATION_PASSAGE_COLOR,
-            grid_side_length=self.grid_side_length,
-            starting_position=self.current_early_term_passage_pos,
-        )
+        if self.only_second_room:
+            self.early_term_passage: Entity | None = None
+        else:
+            self.early_term_passage: Entity | None = Entity(
+                color=self.CLOSED_EARLY_TERMINATION_PASSAGE_COLOR,
+                grid_side_length=self.grid_side_length,
+                starting_position=self.current_early_term_passage_pos,
+            )
 
         for wall in self.walls[:]:
             if (self.passage and wall == self.passage) or (
