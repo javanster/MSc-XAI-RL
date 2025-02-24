@@ -13,6 +13,7 @@ dependencies = [
     "changing-supervisor",
     "gem-collector",
     "gold-run",
+    "gold-run-mini",
     "gymnasium[other]>=1.0.0",
     "isort>=5.13.2",
     "keras>=3.7.0",
@@ -44,3 +45,4 @@ ccr = { path = "environments/ccr" }
 changing-supervisor = { path = "environments/changing_supervisor" }
 gold-run = { path = "environments/gold_run" }
 minecart-counter = { path = "environments/minecart_counter" }
+gold-run-mini = { path = "environments/gold_run_mini" }
