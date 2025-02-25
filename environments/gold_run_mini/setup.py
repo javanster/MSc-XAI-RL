@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="gold_run_mini",
-    version="1.0.94",
+    version="1.0.95",
     packages=find_packages(),
     install_requires=["gymnasium", "numpy", "pygame", "importlib"],
     package_data={

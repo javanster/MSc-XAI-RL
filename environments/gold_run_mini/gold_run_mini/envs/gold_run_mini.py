@@ -269,26 +269,38 @@ class GoldRunMini(Env):
         terminated = False
         truncated = False
 
+        info = {
+            "lava_stepped_on": 0,
+            "gold_picked_up": 0,
+            "exited_in_final_passage": False,
+            "went_to_next_room": False,
+            "exited_in_early_termination_passage:": False,
+        }
+
         for lava_spot in self.lava:
             if self.agent == lava_spot:
                 lava_penalty = self.LAVA_PENALTY
                 reward += lava_penalty
                 terminated = False if self.no_lava_termination else True
+                info["lava_stepped_on"] += 1
                 break
 
         for gold in self.gold_chunks[:]:
             if self.agent == gold:
                 self.gold_chunks.remove(gold)
                 reward += self.GOLD_REWARD
+                info["gold_picked_up"] += 1
                 break
 
         if self.agent == self.passage and self._is_passage_open():
             reward += self.PASSAGE_REWARD
             if self.current_room == 2:
                 terminated = True
+                info["exited_in_final_passage"] = True
             else:
                 self.current_room = self.current_room + 1
                 self._next_room(self.current_room)
+                info["went_to_next_room"] = True
 
         if (
             not self.disable_early_termination
@@ -297,6 +309,7 @@ class GoldRunMini(Env):
         ):
             reward += self.EARLY_TERM_PASSAGE_REWARD
             terminated = True
+            info["exited_in_early_termination_passage:"] = True
 
         self.passage: Entity | None = Entity(
             grid_side_length=self.grid_side_length,
@@ -325,8 +338,6 @@ class GoldRunMini(Env):
 
         if self.episode_step >= 200:
             truncated = True
-
-        info = {}
 
         return new_observation, reward, terminated, truncated, info
 
