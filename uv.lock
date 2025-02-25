@@ -427,7 +427,7 @@ requires-dist = [
 
 [[package]]
 name = "gold-run-mini"
-version = "1.0.93"
+version = "1.0.94"
 source = { directory = "environments/gold_run_mini" }
 dependencies = [
     { name = "gymnasium" },

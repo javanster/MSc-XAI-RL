@@ -36,6 +36,7 @@ class GoldRunMini(Env):
         render_raw_pixels: bool = False,
         disable_early_termination: bool = False,
         only_second_room: bool = False,
+        no_lava_termination: bool = False,
     ) -> None:
         super().__init__()
         self.name = "gold_run"
@@ -52,12 +53,13 @@ class GoldRunMini(Env):
         self.WALL_COLOR = (77, 77, 77)
         self.VALID_PASSAGE_POSITIONS: List[Tuple[int, int]] = [(5, 0), (10, 5), (5, 10), (0, 5)]
 
-        self.STEP_PENALTY = -0.0026
-        self.LAVA_PENALTY = -0.48
-        self.GOLD_REWARD = 0.2617
-        self.PASSAGE_REWARD = 0.2617
-        self.EARLY_TERM_PASSAGE_REWARD = 0.2617
+        self.STEP_PENALTY = -0.001 if no_lava_termination else -0.0026
+        self.LAVA_PENALTY = -0.03 if no_lava_termination else -0.48
+        self.GOLD_REWARD = 0.309 if no_lava_termination else 0.2617
+        self.PASSAGE_REWARD = 0.2 if no_lava_termination else 0.2617
+        self.EARLY_TERM_PASSAGE_REWARD = 0.2 if no_lava_termination else 0.2617
 
+        self.no_lava_termination = no_lava_termination
         self.disable_early_termination = disable_early_termination
         self.only_second_room = only_second_room
         self.wall_sprite_indexes = [random.randint(1, 3) for _ in range(36)]
@@ -271,7 +273,7 @@ class GoldRunMini(Env):
             if self.agent == lava_spot:
                 lava_penalty = self.LAVA_PENALTY
                 reward += lava_penalty
-                terminated = True
+                terminated = False if self.no_lava_termination else True
                 break
 
         for gold in self.gold_chunks[:]:
