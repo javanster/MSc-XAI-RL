@@ -32,16 +32,18 @@ class BinaryConcept:
         name: str,
         environment_name: str,
         observation_presence_callback: Optional[Callable[[Env], bool]] = None,
-        positive_examples: List[np.ndarray] = [],
-        negative_examples: List[np.ndarray] = [],
+        positive_examples: Optional[List[np.ndarray]] = None,
+        negative_examples: Optional[List[np.ndarray]] = None,
     ) -> None:
         self.name: str = name
         self.environment_name = environment_name
-        self.observation_presence_callback: Callable[[Env], bool] | None = (
-            observation_presence_callback
+        self.observation_presence_callback = observation_presence_callback
+        self.positive_examples: List[np.ndarray] = (
+            positive_examples if positive_examples is not None else []
         )
-        self.positive_examples: List[np.ndarray] = positive_examples
-        self.negative_examples: List[np.ndarray] = negative_examples
+        self.negative_examples: List[np.ndarray] = (
+            negative_examples if negative_examples is not None else []
+        )
 
     def check_positive_presence(self, env: Env, observation: np.ndarray) -> bool:
         """
@@ -148,7 +150,7 @@ class BinaryConcept:
             The path to the directory where the positive examples will be saved.
         """
         if len(self.positive_examples) == 0:
-            print("No positive examples to save, returning...")
+            print(f"\nNo positive examples to save for concept {self.name}, returning...\n")
             return
 
         self._ensure_save_directory_exists(directory_path=directory_path)
@@ -156,7 +158,7 @@ class BinaryConcept:
         positive_array = np.array(self.positive_examples)
         np.save(positive_file_path, positive_array)
         print(
-            f"Positive examples of concept {self.name} successfully saved to {positive_file_path}."
+            f"\nPositive examples of concept {self.name} successfully saved to {positive_file_path}.\n"
         )
 
     def _save_negative_examples(self, directory_path: str):
@@ -171,7 +173,7 @@ class BinaryConcept:
             The path to the directory where the negative examples will be saved.
         """
         if len(self.negative_examples) == 0:
-            print("No negative examples to save, returning...")
+            print(f"\nNo negative examples to save for concept {self.name}, returning...\n")
             return
 
         self._ensure_save_directory_exists(directory_path=directory_path)
@@ -179,5 +181,5 @@ class BinaryConcept:
         negative_array = np.array(self.negative_examples)
         np.save(negative_file_path, negative_array)
         print(
-            f"Negative examples of concept {self.name} successfully saved to {negative_file_path}."
+            f"\nNegative examples of concept {self.name} successfully saved to {negative_file_path}.\n"
         )

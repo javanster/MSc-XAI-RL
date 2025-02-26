@@ -45,16 +45,16 @@ class ContinuousConcept:
         name: str,
         environment_name: str,
         observation_presence_callback: Optional[Callable[[Env], float]] = None,
-        examples: List[np.ndarray] = [],
-        labels: List[float] = [],
+        examples: Optional[List[np.ndarray]] = None,
+        labels: Optional[List[float]] = None,
     ) -> None:
         self.name: str = name
         self.environment_name = environment_name
         self.observation_presence_callback: Callable[[Env], float] | None = (
             observation_presence_callback
         )
-        self.examples: List[np.ndarray] = examples
-        self.labels: List[float] = labels
+        self.examples: List[np.ndarray] = examples if examples is not None else []
+        self.labels: List[float] = labels if labels is not None else []
 
     def check_presence(self, env: Env, observation: np.ndarray) -> bool:
         """
@@ -113,7 +113,7 @@ class ContinuousConcept:
             The path to the directory where the examples will be saved.
         """
         if len(self.examples) == 0:
-            print("No examples to save, returning...")
+            print(f"\nNo examples to save for concept {self.name}, returning...\n")
             return
 
         self._ensure_save_directory_exists(directory_path=directory_path)
@@ -130,7 +130,7 @@ class ContinuousConcept:
         np.save(examples_file_path, examples_array)
         np.save(labels_file_path, labels_array)
 
-        print(f"Examples of concept {self.name} successfully saved to {examples_file_path}.")
+        print(f"\nExamples of concept {self.name} successfully saved to {examples_file_path}.\n")
         print(
-            f"Labels of examples of concept {self.name} successfully saved to {labels_file_path}."
+            f"\nLabels of examples of concept {self.name} successfully saved to {labels_file_path}.\n"
         )
