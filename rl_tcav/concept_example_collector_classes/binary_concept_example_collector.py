@@ -124,7 +124,7 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
                 ):
                     if iterations >= self.max_iter_per_concept:
                         print(
-                            f"Max iterations ({self.max_iter_per_concept}) reached when collecting examples for concept {concept.name}. Moving on to the next concept..."
+                            f"\nMax iterations ({self.max_iter_per_concept}) reached when collecting examples for concept {concept.name}. Moving on to the next concept...\n"
                         )
                         break
 
@@ -160,7 +160,6 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
                         observation, _, terminated, truncated, _ = self.env.step(action)
 
                     iterations += 1
-                    print(f"ITERATION: {iterations}")
 
             self.env.close()
 
@@ -299,7 +298,7 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
         """
         if not self.pos_examples_accumulated or not self.neg_examples_accumulated:
             raise ValueError(
-                "No accumulation data found. Did you remember to initialize the example collector with 'track_example_accumulation' set to True, and have you run collection?"
+                "\nNo accumulation data found. Did you remember to initialize the example collector with 'track_example_accumulation' set to True, and have you run collection?\n"
             )
         return self.pos_examples_accumulated, self.neg_examples_accumulated
 
@@ -323,21 +322,21 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
         """
         if not self.pos_examples_accumulated or not self.neg_examples_accumulated:
             raise ValueError(
-                "No accumulation data found. Did you remember to initialize the example collector with 'track_example_accumulation' set to True, and have you run collection?"
+                "\nNo accumulation data found. Did you remember to initialize the example collector with 'track_example_accumulation' set to True, and have you run collection?\n"
             )
         self._ensure_save_directory_exists(directory_path=directory_path)
         for concept_name in self.pos_examples_accumulated.keys():
-            positive_file_path = f"{directory_path}/binary_concept_{concept_name}_{len(self.pos_examples_accumulated[concept_name])}_positive_examples_accumulation_data.npy"
+            positive_file_path = f"{directory_path}/binary_concept_{concept_name}_positive_examples_accumulation_data_{len(self.pos_examples_accumulated[concept_name])}_iterations.npy"
             positive_array = np.array(self.pos_examples_accumulated[concept_name])
             np.save(positive_file_path, positive_array)
             print(
-                f"Accumulation data for positive examples of concept {concept_name} successfully saved to {positive_file_path}."
+                f"\nAccumulation data for positive examples of concept {concept_name} successfully saved to {positive_file_path}.\n"
             )
 
         for concept_name in self.neg_examples_accumulated.keys():
-            negative_file_path = f"{directory_path}/binary_concept_{concept_name}_{len(self.neg_examples_accumulated[concept_name])}_negative_examples_accumulation_data.npy"
+            negative_file_path = f"{directory_path}/binary_concept_{concept_name}_negative_examples_accumulation_data_{len(self.neg_examples_accumulated[concept_name])}_iterations.npy"
             negative_array = np.array(self.neg_examples_accumulated[concept_name])
             np.save(negative_file_path, negative_array)
             print(
-                f"Accumulation data for negative examples of concept {concept_name} successfully saved to {negative_file_path}."
+                f"\nAccumulation data for negative examples of concept {concept_name} successfully saved to {negative_file_path}.\n"
             )
