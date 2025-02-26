@@ -407,27 +407,8 @@ wheels = [
 ]
 
 [[package]]
-name = "gold-run"
-version = "2.0.2"
-source = { directory = "environments/gold_run" }
-dependencies = [
-    { name = "gymnasium" },
-    { name = "importlib" },
-    { name = "numpy" },
-    { name = "pygame" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "gymnasium" },
-    { name = "importlib" },
-    { name = "numpy" },
-    { name = "pygame" },
-]
-
-[[package]]
 name = "gold-run-mini"
-version = "1.0.95"
+version = "1.1.12"
 source = { directory = "environments/gold_run_mini" }
 dependencies = [
     { name = "gymnasium" },
@@ -917,7 +898,6 @@ dependencies = [
     { name = "ccr" },
     { name = "changing-supervisor" },
     { name = "gem-collector" },
-    { name = "gold-run" },
     { name = "gold-run-mini" },
     { name = "gymnasium", extra = ["other"] },
     { name = "isort" },
@@ -942,7 +922,6 @@ requires-dist = [
     { name = "ccr", directory = "environments/ccr" },
     { name = "changing-supervisor", directory = "environments/changing_supervisor" },
     { name = "gem-collector", directory = "environments/gem_collector" },
-    { name = "gold-run", directory = "environments/gold_run" },
     { name = "gold-run-mini", directory = "environments/gold_run_mini" },
     { name = "gymnasium", extras = ["other"], specifier = ">=1.0.0" },
     { name = "isort", specifier = ">=5.13.2" },

@@ -37,11 +37,12 @@ class GoldRunMini(Env):
         disable_early_termination: bool = False,
         only_second_room: bool = False,
         no_lava_termination: bool = False,
+        lava_spots: int = 8,
     ) -> None:
         super().__init__()
-        self.name = "gold_run"
+        self.name = "gold_run_mini"
         self.render_raw_pixels = render_raw_pixels
-        self.SPRITE_MODULE_PATH: str = "gold_run.envs.sprites"
+        self.SPRITE_MODULE_PATH: str = "gold_run_mini.envs.sprites"
 
         self.AGENT_COLOR: Tuple[int, int, int] = (78, 172, 248)
         self.LAVA_COLOR = (255, 69, 0)  # Red-Orange
@@ -59,6 +60,9 @@ class GoldRunMini(Env):
         self.PASSAGE_REWARD = 0.2 if no_lava_termination else 0.2617
         self.EARLY_TERM_PASSAGE_REWARD = 0.2 if no_lava_termination else 0.2617
 
+        if lava_spots > 8 or lava_spots < 0:
+            raise ValueError("The max number of lava spots is 8, and the min is 0.")
+        self.lava_spots = lava_spots
         self.no_lava_termination = no_lava_termination
         self.disable_early_termination = disable_early_termination
         self.only_second_room = only_second_room
@@ -112,7 +116,7 @@ class GoldRunMini(Env):
         self.lava: List[Entity] = []
         placed_positions = []
 
-        while len(self.lava) < 8:
+        while len(self.lava) < self.lava_spots:
             lava_pos = self._get_pos_in_empty_space()
 
             # Check if the new lava position is at least 2 spaces apart from all others
@@ -274,7 +278,7 @@ class GoldRunMini(Env):
             "gold_picked_up": 0,
             "exited_in_final_passage": False,
             "went_to_next_room": False,
-            "exited_in_early_termination_passage:": False,
+            "exited_in_early_termination_passage": False,
         }
 
         for lava_spot in self.lava:
@@ -309,7 +313,7 @@ class GoldRunMini(Env):
         ):
             reward += self.EARLY_TERM_PASSAGE_REWARD
             terminated = True
-            info["exited_in_early_termination_passage:"] = True
+            info["exited_in_early_termination_passage"] = True
 
         self.passage: Entity | None = Entity(
             grid_side_length=self.grid_side_length,
