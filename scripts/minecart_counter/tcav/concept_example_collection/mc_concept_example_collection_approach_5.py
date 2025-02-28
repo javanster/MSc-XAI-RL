@@ -56,14 +56,14 @@ if __name__ == "__main__":
     batch_tag = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}-{random.random()}"
 
     binary_concept_example_collector.save_examples(
-        directory_path=f"{EXAMPLE_DATA_DIRECTORY_PATH}/random_policy_play/{batch_tag}/",
+        directory_path=f"{EXAMPLE_DATA_DIRECTORY_PATH}/more_capable_model_epsilon0_005_play/{batch_tag}/",
     )
     binary_concept_example_collector.save_example_accumulation_data(
-        directory_path=f"{EXAMPLE_DATA_DIRECTORY_PATH}/random_policy_play/{batch_tag}"
+        directory_path=f"{EXAMPLE_DATA_DIRECTORY_PATH}/more_capable_model_epsilon0_005_play/{batch_tag}"
     )
     continuous_concept_example_collector.save_examples(
-        directory_path=f"{EXAMPLE_DATA_DIRECTORY_PATH}/random_policy_play/{batch_tag}/",
+        directory_path=f"{EXAMPLE_DATA_DIRECTORY_PATH}/more_capable_model_epsilon0_005_play/{batch_tag}/",
     )
     continuous_concept_example_collector.save_example_accumulation_data(
-        directory_path=f"{EXAMPLE_DATA_DIRECTORY_PATH}/random_policy_play/{batch_tag}"
+        directory_path=f"{EXAMPLE_DATA_DIRECTORY_PATH}/more_capable_model_epsilon0_005_play/{batch_tag}"
     )
