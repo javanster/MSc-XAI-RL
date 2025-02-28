@@ -27,6 +27,8 @@ class ContinuousConceptExampleCollector(ConceptExampleCollector):
         The maximum number of iterations per concept during data collection.
     normalization_callback : callable or None
         A function used to normalize observations before passing them to the model.
+    track_example_accumulation : bool
+        Whether to track the accumulation of examples over time.
 
     Parameters
     ----------
@@ -38,6 +40,8 @@ class ContinuousConceptExampleCollector(ConceptExampleCollector):
         The maximum number of iterations per concept during data collection.
     normalization_callback : str, optional
         The key for selecting the normalization callback. If not provided, no normalization is applied.
+    track_example_accumulation : bool
+        Whether to track the accumulation of examples over time.
 
     Raises
     ------
@@ -51,8 +55,13 @@ class ContinuousConceptExampleCollector(ConceptExampleCollector):
         concepts: List[ContinuousConcept],
         max_iter_per_concept: int,
         normalization_callback: Optional[str] = None,
+        track_example_accumulation=False,
     ) -> None:
-        super().__init__(env=env, normalization_callback=normalization_callback)
+        super().__init__(
+            env=env,
+            normalization_callback=normalization_callback,
+            track_example_accumulation=track_example_accumulation,
+        )
         self.max_iter_per_concept = max_iter_per_concept
         self._verify_no_concept_examples(concepts=concepts)
         self.concepts: List[ContinuousConcept] = concepts
