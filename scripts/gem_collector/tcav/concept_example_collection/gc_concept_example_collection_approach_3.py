@@ -1,3 +1,4 @@
+import random
 from datetime import datetime
 from typing import cast
 
@@ -13,8 +14,6 @@ from .gc_concepts import get_gc_concepts
 
 if __name__ == "__main__":
     env = gym.make(id="GemCollector-v3")
-
-    batch_tag = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     concept_list = get_gc_concepts()
 
@@ -32,6 +31,7 @@ if __name__ == "__main__":
     example_collector.model_epsilon_play_collect_examples(
         example_n=EXAMPLE_N, model=model, epsilon=0.05
     )
+    batch_tag = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}-{random.random()}"
     example_collector.save_examples(
         directory_path=f"{EXAMPLE_DATA_DIRECTORY_PATH}/model_of_interest_epsilon0_005_play/{batch_tag}/",
     )

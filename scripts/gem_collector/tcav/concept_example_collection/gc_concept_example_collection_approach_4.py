@@ -1,3 +1,4 @@
+import random
 from datetime import datetime
 from typing import cast
 
@@ -14,8 +15,6 @@ from .gc_concepts import get_gc_concepts
 if __name__ == "__main__":
     env = gym.make(id="GemCollector-v3")
 
-    batch_tag = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
     concept_list = get_gc_concepts()
     example_collector = BinaryConceptExampleCollector(
         concepts=concept_list,
@@ -29,6 +28,7 @@ if __name__ == "__main__":
     model = load_model(MORE_CAPABLE_MODEL_PATH)
     model = cast(Sequential, model)
     example_collector.model_greedy_play_collect_examples(example_n=EXAMPLE_N, model=model)
+    batch_tag = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}-{random.random()}"
     example_collector.save_examples(
         directory_path=f"{EXAMPLE_DATA_DIRECTORY_PATH}/more_capable_model_greedy_play/{batch_tag}/",
     )

@@ -1,3 +1,4 @@
+import random
 from datetime import datetime
 
 import gem_collector
@@ -11,8 +12,6 @@ from .gc_concepts import get_gc_concepts
 if __name__ == "__main__":
     env = gym.make(id="GemCollector-v3")
 
-    batch_tag = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
     concept_list = get_gc_concepts()
 
     example_collector = BinaryConceptExampleCollector(
@@ -25,6 +24,7 @@ if __name__ == "__main__":
 
     # COLLECT EXAMPLES BY RANDOM POLICY PLAY
     example_collector.random_policy_play_collect_examples(example_n=EXAMPLE_N)
+    batch_tag = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}-{random.random()}"
     example_collector.save_examples(
         directory_path=f"{EXAMPLE_DATA_DIRECTORY_PATH}/random_policy_play/{batch_tag}/",
     )
