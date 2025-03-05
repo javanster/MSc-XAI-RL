@@ -5,3 +5,4 @@ CONCEPT_EXAMPLE_PATHS = {
     "more_capable_model_greedy": "rl_tcav_data/concept_examples/minecart_counter/more_capable_model_greedy_play",
     "more_capable_model_greedy_epsilon0.05": "rl_tcav_data/concept_examples/minecart_counter/more_capable_model_epsilon0_005_play",
 }
+ACTIVATIONS_N = 1_000
