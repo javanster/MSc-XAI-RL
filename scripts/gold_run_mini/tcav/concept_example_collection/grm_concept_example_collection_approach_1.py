@@ -1,3 +1,4 @@
+import random
 from datetime import datetime
 
 import gold_run_mini
@@ -16,8 +17,6 @@ if __name__ == "__main__":
         lava_spots=ENV_LAVA_SPOTS,
     )
 
-    batch_tag = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
     concept_list = get_grm_concepts()
 
     example_collector = BinaryConceptExampleCollector(
@@ -29,6 +28,8 @@ if __name__ == "__main__":
     )
 
     example_collector.random_policy_play_collect_examples(example_n=EXAMPLE_N)
+    batch_tag = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}-{random.random()}"
+
     example_collector.save_examples(
         directory_path=f"{EXAMPLE_DATA_DIRECTORY_PATH}/random_policy_play/{batch_tag}/",
     )
