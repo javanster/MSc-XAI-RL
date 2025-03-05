@@ -1,8 +1,8 @@
 import random
 from datetime import datetime
 
-import gem_collector
 import gymnasium as gym
+import minecart_counter
 
 from rl_tcav import BinaryConceptExampleCollector, ContinuousConceptExampleCollector
 

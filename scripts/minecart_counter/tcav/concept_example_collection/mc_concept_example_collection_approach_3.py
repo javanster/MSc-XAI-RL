@@ -2,8 +2,8 @@ import random
 from datetime import datetime
 from typing import cast
 
-import gem_collector
 import gymnasium as gym
+import minecart_counter
 from keras.api.models import Sequential
 from keras.api.saving import load_model
 
