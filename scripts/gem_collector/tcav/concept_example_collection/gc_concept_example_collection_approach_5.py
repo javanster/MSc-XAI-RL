@@ -9,7 +9,8 @@ from keras.api.saving import load_model
 
 from rl_tcav import BinaryConceptExampleCollector
 
-from .constants import EXAMPLE_DATA_DIRECTORY_PATH, EXAMPLE_N, MORE_CAPABLE_MODEL_PATH
+from ..constants import MORE_CAPABLE_MODEL_PATH
+from .constants import EXAMPLE_DATA_DIRECTORY_PATH, EXAMPLE_N
 from .gc_concepts import get_gc_concepts
 
 if __name__ == "__main__":
