@@ -172,7 +172,13 @@ class BaselineContinuousConceptProbe(ConceptProbe):
                 'The concept probe has not been trained. Call "train_concept_probe" first.'
             )
 
-        y_pred = self.linear_regressor.predict(validation_dataset).flatten()
+        layer_activations = self.model_activation_obtainer.get_layer_activations(
+            layer_index=self.model_layer_index,
+            model_inputs=np.array(validation_dataset),
+            flatten=True,
+        )
+
+        y_pred = self.linear_regressor.predict(layer_activations).flatten()
 
         self.concept_probe_score_on_validation_set = cast(
             float, r2_score(validation_labels, y_pred)

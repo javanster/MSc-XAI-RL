@@ -179,7 +179,13 @@ class BaselineBinaryConceptProbe(ConceptProbe):
                 'The concept probe has not been trained. Call "train_concept_probe" first.'
             )
 
-        y_pred = self.binary_classifier.predict(validation_dataset)
+        layer_activations = self.model_activation_obtainer.get_layer_activations(
+            layer_index=self.model_layer_index,
+            model_inputs=np.array(validation_dataset),
+            flatten=True,
+        )
+
+        y_pred = self.binary_classifier.predict(layer_activations)
         y_pred_binary = (y_pred >= 0.5).astype(int)
         self.accuracy_on_validation_set = cast(
             float, accuracy_score(validation_labels, y_pred_binary)
