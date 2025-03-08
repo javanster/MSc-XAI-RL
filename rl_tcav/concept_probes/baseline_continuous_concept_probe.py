@@ -147,9 +147,7 @@ class BaselineContinuousConceptProbe(ConceptProbe):
             concept_name=self.concept.name, layer_index=self.model_layer_index, vector=vector
         )
 
-    def validate_probe(
-        self, validation_dataset: List[np.ndarray], validation_labels: List[np.ndarray]
-    ) -> None:
+    def validate_probe(self, validation_dataset: np.ndarray, validation_labels: np.ndarray) -> None:
         """
         Evaluates the trained concept probe on an external validation dataset.
 
@@ -157,9 +155,9 @@ class BaselineContinuousConceptProbe(ConceptProbe):
 
         Parameters
         ----------
-        validation_dataset : List[np.ndarray]
+        validation_dataset : np.ndarray
             The input activation dataset for validation.
-        validation_labels : List[np.ndarray]
+        validation_labels : np.ndarray
             The true concept values for validation.
 
         Raises

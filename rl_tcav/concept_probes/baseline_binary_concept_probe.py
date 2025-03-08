@@ -154,9 +154,7 @@ class BaselineBinaryConceptProbe(ConceptProbe):
             concept_name=self.concept.name, layer_index=self.model_layer_index, vector=vector
         )
 
-    def validate_probe(
-        self, validation_dataset: List[np.ndarray], validation_labels: List[np.ndarray]
-    ) -> None:
+    def validate_probe(self, validation_dataset: np.ndarray, validation_labels: np.ndarray) -> None:
         """
         Evaluates the trained concept probe on an external validation dataset.
 
@@ -164,9 +162,9 @@ class BaselineBinaryConceptProbe(ConceptProbe):
 
         Parameters
         ----------
-        validation_dataset : List[np.ndarray]
+        validation_dataset : np.ndarray
             The input activation dataset for validation.
-        validation_labels : List[np.ndarray]
+        validation_labels : np.ndarray
             The true concept values for validation.
 
         Raises
@@ -181,7 +179,7 @@ class BaselineBinaryConceptProbe(ConceptProbe):
 
         layer_activations = self.model_activation_obtainer.get_layer_activations(
             layer_index=self.model_layer_index,
-            model_inputs=np.array(validation_dataset),
+            model_inputs=validation_dataset,
             flatten=True,
         )
 
@@ -191,5 +189,5 @@ class BaselineBinaryConceptProbe(ConceptProbe):
             float, accuracy_score(validation_labels, y_pred_binary)
         )
         self.concept_probe_score_on_validation_set = binary_concept_probe_score(
-            y_val=np.array(validation_labels), y_pred=y_pred_binary
+            y_val=validation_labels, y_pred=y_pred_binary
         )

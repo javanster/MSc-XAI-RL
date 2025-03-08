@@ -69,9 +69,7 @@ class ConceptProbe(ABC):
         pass
 
     @abstractmethod
-    def validate_probe(
-        self, validation_dataset: List[np.ndarray], validation_labels: List[np.ndarray]
-    ) -> None:
+    def validate_probe(self, validation_dataset: np.ndarray, validation_labels: np.ndarray) -> None:
         """
         Evaluates the trained concept probe on an external validation dataset.
 
@@ -80,9 +78,9 @@ class ConceptProbe(ABC):
 
         Parameters
         ----------
-        validation_dataset : List[np.ndarray]
+        validation_dataset : np.ndarray
             The input activations for validation.
-        validation_labels : List[np.ndarray]
+        validation_labels : np.ndarray
             The ground-truth labels for validation.
 
         Raises
