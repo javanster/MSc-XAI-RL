@@ -8,8 +8,8 @@ from keras.api.saving import load_model
 
 from agents import DDQNAgent, TestLogger
 
-MODEL_CLUSTERED_PATH = "models/MinecartCounter/clustered/glowing-resonance-28/1740061790_model____0.9119avg____0.9950max____0.0900min.keras"
-MODEL_SCATTERED_PATH = "models/MinecartCounter/scattered/genial-brook-15/model_time_step_420321_episode_43750____0.9757avg____0.9800max____0.9650min.keras"
+MODEL_OF_INTEREST_PATH = "models/MinecartCounter/scattered/kind-cosmos-35/1740021317_model____0.5122avg____0.9750max___-0.0900min.keras"
+MORE_CAPABLE_MODEL_PATH = "models/MinecartCounter/scattered/genial-brook-15/model_time_step_420321_episode_43750____0.9757avg____0.9800max____0.9650min.keras"
 
 if __name__ == "__main__":
 
@@ -18,11 +18,11 @@ if __name__ == "__main__":
         render_mode="human",
         scatter_minecarts=True,
         render_raw_pixels=False,
-        render_fps=3,
+        render_fps=4,
     )
     agent = DDQNAgent(env=env, obervation_normalization_type="image")
 
-    model = load_model(filepath=MODEL_SCATTERED_PATH)
+    model = load_model(filepath=MODEL_OF_INTEREST_PATH)
     model = cast(Sequential, model)
 
     log_vars = {
@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
     test_logger = TestLogger(log_vars=log_vars, step_callback=step_callback)
 
-    agent.test(model=model, episodes=20, test_logger=test_logger, epsilon=0.05)
+    agent.test(model=model, episodes=5_000, test_logger=test_logger, epsilon=0.05)
 
     print(f"Goal reached count: {log_vars['goal_reached_count']}")
     print(f"Correct goal reached count: {log_vars['correct_goal_reached_count']}")
