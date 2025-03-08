@@ -8,9 +8,12 @@ if __name__ == "__main__":
     env = gym.make(
         id="GoldRunMini-v1",
         render_mode="human",
-        render_raw_pixels=False,
+        render_raw_pixels=True,
         disable_early_termination=False,
+        no_lava_termination=False,
         only_second_room=False,
+        lava_spots=8,
+        render_fps=3,
     )
 
     key_action_mapping = {
