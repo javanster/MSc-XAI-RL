@@ -1,6 +1,10 @@
+from typing import Callable
+
 import numpy as np
 from keras import Model
 from keras.api.models import Sequential
+
+from agents import ObservationNormalizationCallbacks
 
 
 class ModelActivationObtainer:
@@ -15,10 +19,29 @@ class ModelActivationObtainer:
     ----------
     model : Sequential
         The Keras Sequential model whose layer activations will be extracted.
+    input_normalization_type: str
+        The normaliaztion type to use for the model inputs
+
+    Raises
+    ------
+    ValueError
+        If the `normalization_type` is not a valid key in
+        `ObservationNormalizationCallbacks.normalization_callbacks`.
+
     """
 
-    def __init__(self, model: Sequential) -> None:
+    def __init__(self, model: Sequential, input_normalization_type: str) -> None:
         self.model: Sequential = model
+        if (
+            input_normalization_type
+            not in ObservationNormalizationCallbacks.normalization_callbacks.keys()
+        ):
+            raise ValueError(
+                f'"{input_normalization_type}" is not a valid argument for normalization_type. Valid arguments: {[type for type in ObservationNormalizationCallbacks.normalization_callbacks.keys()]}'
+            )
+        self.input_normalization_callback: Callable[[np.ndarray], np.ndarray] = (
+            ObservationNormalizationCallbacks.normalization_callbacks[input_normalization_type]
+        )
         self._activation_models = {
             layer_index: self._create_activation_model(layer_index=layer_index)
             for layer_index in range(len(model.layers))
@@ -43,7 +66,9 @@ class ModelActivationObtainer:
             outputs=self.model.layers[layer_index].output,  # type: ignore
         )
 
-    def get_layer_activations(self, layer_index: int, model_inputs: np.ndarray) -> np.ndarray:
+    def get_layer_activations(
+        self, layer_index: int, model_inputs: np.ndarray, flatten: bool
+    ) -> np.ndarray:
         """
         Get the activations from a specific layer for the given inputs.
 
@@ -58,6 +83,8 @@ class ModelActivationObtainer:
         model_inputs : np.ndarray
             The inputs to the model for which activations are computed.
             The shape of this array should match the model's input shape.
+        flatten : bool
+            Whether to flatten activations, applicable for Conv2D layers
 
         Returns
         -------
@@ -71,11 +98,11 @@ class ModelActivationObtainer:
         to `(batch_size, height * width * channels)`.
         """
         activation_model: Model = self._activation_models[layer_index]
-
-        activations: np.ndarray = activation_model.predict(model_inputs)
+        inputs_normalized = self.input_normalization_callback(model_inputs)
+        activations: np.ndarray = activation_model.predict(inputs_normalized)
 
         # If the layer is a Conv2D layer, flatten the output
-        if len(activations.shape) == 4:
+        if flatten and len(activations.shape) == 4:
             batch_size, height, width, channels = activations.shape
             activations = activations.reshape(batch_size, height * width * channels)
 
