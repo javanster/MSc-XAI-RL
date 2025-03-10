@@ -184,137 +184,75 @@ class BCEValidationSetCurator:
 
     def _create_balanced_validation_set_2(self):
         """
-        Creates a validation set balancing approaches and positive/negative examples,
-        but without strictly balancing the source batches.
+        Creates a validation set by balancing across approaches, batches, and
+        positive/negative examples in a round-robin manner. If a particular
+        (approach, batch) group runs out of data, it is removed from the rotation.
 
         Returns
         -------
         tuple
-            A tuple containing:
-            - validation_set : list
-                A list of curated examples.
-            - labels : list
-                A list of corresponding labels (1 for positive, 0 for negative).
-            - approach_example_counts : dict
-                A dictionary tracking the count of positive and negative examples per approach and batch.
+            (validation_set, labels, approach_example_counts)
+            Where:
+                validation_set : list of ndarray
+                    The curated examples.
+                labels : list of int
+                    Corresponding labels (1 for positive, 0 for negative).
+                approach_example_counts : dict
+                    Tracks how many positive and negative examples were taken
+                    from each (approach, batch).
         """
         validation_set = []
         labels = []
+
         approach_example_counts = {}
-
-        pos_queues = {approach: [] for approach in self.approach_batch_sets.keys()}
-        neg_queues = {approach: [] for approach in self.approach_batch_sets.keys()}
-
-        for approach in self.approach_batch_sets.keys():
+        for approach, batch_set in self.approach_batch_sets.items():
             approach_example_counts[approach] = {}
-            batch_set = self.approach_batch_sets[approach]
-            for batch_i, (pos_examples, neg_examples) in enumerate(batch_set):
-                pos_queues[approach].extend(
-                    [(pos_example, batch_i) for pos_example in pos_examples]
+            for batch_idx in range(len(batch_set)):
+                approach_example_counts[approach][batch_idx] = {"pos_count": 0, "neg_count": 0}
+
+        groups = []
+        for approach, batch_set in self.approach_batch_sets.items():
+            for batch_idx, (pos_examples, neg_examples) in enumerate(batch_set):
+                pos_list = list(pos_examples)
+                neg_list = list(neg_examples)
+                random.shuffle(pos_list)
+                random.shuffle(neg_list)
+                groups.append(
+                    {"approach": approach, "batch_idx": batch_idx, "pos": pos_list, "neg": neg_list}
                 )
-                neg_queues[approach].extend(
-                    [(neg_example, batch_i) for neg_example in neg_examples]
-                )
-                approach_example_counts[approach][batch_i] = {"pos_count": 0, "neg_count": 0}
 
-        for approach in pos_queues.keys():
-            random.shuffle(pos_queues[approach])
-            random.shuffle(neg_queues[approach])
-
+        i = 0
         with tqdm(total=self.target_size, unit="example") as pbar:
-            while len(validation_set) < self.target_size:
-                for approach in pos_queues.keys():
+            while len(validation_set) < self.target_size and groups:
+                idx = i % len(groups)
+                group = groups[idx]
+                approach = group["approach"]
+                batch_idx = group["batch_idx"]
 
-                    added = False
-                    while not added:
-                        if (
-                            len(pos_queues[approach]) < 1
-                        ):  # Ensures that all approaches are balanced
-                            return validation_set, labels, approach_example_counts
-                        pos_example = pos_queues[approach].pop(0)
-                        if not any(np.array_equal(pos_example[0], arr) for arr in validation_set):
-                            validation_set.append(pos_example[0])
-                            labels.append(1)
-                            added = True
-                            pbar.update(1)
-                            approach_example_counts[approach][pos_example[1]]["pos_count"] += 1
-
-                    added = False
-                    while not added:
-                        if (
-                            len(neg_queues[approach]) < 1
-                        ):  # Ensures that all approaches are balanced
-                            return validation_set, labels, approach_example_counts
-                        neg_example = neg_queues[approach].pop(0)
-                        if not any(np.array_equal(neg_example[0], arr) for arr in validation_set):
-                            validation_set.append(neg_example[0])
-                            labels.append(0)
-                            added = True
-                            pbar.update(1)
-                            approach_example_counts[approach][neg_example[1]]["neg_count"] += 1
-
-        return validation_set, labels, approach_example_counts
-
-    def _create_balanced_validation_set_3(self):
-        """
-        Creates a validation set balancing only positive and negative examples,
-        without considering approaches or batch sources.
-
-        Returns
-        -------
-        tuple
-            A tuple containing:
-            - validation_set : list
-                A list of curated examples.
-            - labels : list
-                A list of corresponding labels (1 for positive, 0 for negative).
-            - approach_example_counts : dict
-                A dictionary tracking the count of positive and negative examples per approach and batch.
-        """
-        validation_set = []
-        labels = []
-        approach_example_counts = {}
-
-        pos_queue = []
-        neg_queue = []
-
-        for approach in self.approach_batch_sets.keys():
-            batch_set = self.approach_batch_sets[approach]
-            approach_example_counts[approach] = {}
-            for batch_i, (pos_examples, neg_examples) in enumerate(batch_set):
-                approach_example_counts[approach][batch_i] = {"pos_count": 0, "neg_count": 0}
-                pos_queue.extend([(pos_example, approach, batch_i) for pos_example in pos_examples])
-                neg_queue.extend([(neg_example, approach, batch_i) for neg_example in neg_examples])
-
-        random.shuffle(pos_queue)
-        random.shuffle(neg_queue)
-
-        with tqdm(total=self.target_size, unit="example") as pbar:
-            while len(validation_set) < self.target_size:
-
-                added = False
-                while not added:
-                    if len(pos_queue) < 1:  # Ensures that pos/neg is balanced
-                        return validation_set, labels, approach_example_counts
-                    pos_example = pos_queue.pop(0)
-                    if not any(np.array_equal(pos_example[0], arr) for arr in validation_set):
-                        validation_set.append(pos_example[0])
+                if group["pos"]:
+                    candidate_pos = group["pos"].pop(0)
+                    if not any(np.array_equal(candidate_pos, arr) for arr in validation_set):
+                        validation_set.append(candidate_pos)
                         labels.append(1)
-                        added = True
+                        approach_example_counts[approach][batch_idx]["pos_count"] += 1
                         pbar.update(1)
-                        approach_example_counts[pos_example[1]][pos_example[2]]["pos_count"] += 1
 
-                added = False
-                while not added:
-                    if len(neg_queue) < 1:  # Ensures that pos/neg is balanced
-                        return validation_set, labels, approach_example_counts
-                    neg_example = neg_queue.pop(0)
-                    if not any(np.array_equal(neg_example[0], arr) for arr in validation_set):
-                        validation_set.append(neg_example[0])
+                if len(validation_set) >= self.target_size:
+                    break
+
+                if group["neg"]:
+                    candidate_neg = group["neg"].pop(0)
+                    if not any(np.array_equal(candidate_neg, arr) for arr in validation_set):
+                        validation_set.append(candidate_neg)
                         labels.append(0)
-                        added = True
+                        approach_example_counts[approach][batch_idx]["neg_count"] += 1
                         pbar.update(1)
-                        approach_example_counts[neg_example[1]][neg_example[2]]["neg_count"] += 1
+
+                if not group["pos"] and not group["neg"]:
+                    groups.pop(idx)
+
+                else:
+                    i += 1
 
         return validation_set, labels, approach_example_counts
 
@@ -334,14 +272,15 @@ class BCEValidationSetCurator:
     def curate_validation_set(self):
         """
         Generates and stores a balanced validation set using a progressive approach
-        that applies three balancing strategies in sequence if needed.
+        that applies two balancing strategies in sequence if needed.
 
         1. **Method 1:** Balances across approaches, batches, and positive/negative examples.
-        2. **Method 2:** Balances across approaches and positive/negative examples, but not batches.
-        3. **Method 3:** Balances only positive/negative examples, ignoring approach and batch balance.
+        2. **Method 2:** Tries to balance across approaches, positive/negative examples, and
+        batches in a round robin manner, but might end up only balancing accross approach and
+        positive/negative, or only positive/negative.
 
-        If a method fails to produce enough examples, the next method is attempted. The final dataset,
-        labels, and statistics on example counts are saved to disk.
+        If the first method fails to produce enough examples, the second method is attempted.
+        The final dataset, labels, and statistics on example counts are then saved to disk.
         """
         concept_validation_set, labels, approach_example_counts = (
             self._create_balanced_validation_set_1()
@@ -354,13 +293,6 @@ class BCEValidationSetCurator:
                 self._create_balanced_validation_set_2()
             )
             method = 2
-
-        if len(concept_validation_set) < self.target_size:
-            print("Validation set curation method 2 insufficient, trying method 3...")
-            concept_validation_set, labels, approach_example_counts = (
-                self._create_balanced_validation_set_3()
-            )
-            method = 3
 
         print(
             f"Validation set with {len(concept_validation_set)} examples successfully curated. Storing..."
