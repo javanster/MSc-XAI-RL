@@ -95,6 +95,34 @@ def _balance_binary_example_sets(pos_examples, neg_examples):
     return pos_examples, neg_examples
 
 
+def _remove_binary_val_set_duplicates(concept_data, validation_dataset):
+    validation_set = set(arr.tobytes() for arr in validation_dataset)
+    new_concept_arr = []
+
+    for pos_examples, neg_examples in concept_data:
+        new_pos_examples_arr = [ex for ex in pos_examples if ex.tobytes() not in validation_set]
+        new_neg_examples_arr = [ex for ex in neg_examples if ex.tobytes() not in validation_set]
+        new_concept_arr.append((np.array(new_pos_examples_arr), np.array(new_neg_examples_arr)))
+
+    return new_concept_arr
+
+
+def _remove_continuous_val_set_duplicates(concept_data, validation_dataset):
+    validation_set = set(arr.tobytes() for arr in validation_dataset)
+    new_concept_arr = []
+
+    for examples, labels in concept_data:
+        new_examples_list = []
+        new_labels_list = []
+        for ex, label in zip(examples, labels):
+            if ex.tobytes() not in validation_set:
+                new_examples_list.append(ex)
+                new_labels_list.append(label)
+        new_concept_arr.append((np.array(new_examples_list), np.array(new_labels_list)))
+
+    return new_concept_arr
+
+
 def _create_binary_expanding_sample_sets(pos_examples, neg_examples):
     n = len(pos_examples)
     sample_sizes = []
@@ -161,12 +189,15 @@ def obtain_cavs_by_approach(approach: str):
     total_iterations = len(CONCEPT_PREFIXES) * 10 * 14 * len(model.layers)
     with tqdm(total=total_iterations, unit="cav") as pbar:
         for concept_i, prefix in enumerate(CONCEPT_PREFIXES):
+            concept_name = CONCEPT_NAMES[concept_i]
 
             if prefix.startswith("binary"):
                 concept_data = load_binary_concept_examples_with_prefix(approach_path, prefix)
-                concept_name = CONCEPT_NAMES[concept_i]
                 validation_dataset_path = VALIDATION_DATASET_PATHS[concept_i]
                 validation_labels_set_path = VALIDATION_LABEL_SET_PATHS[concept_i]
+                concept_data = _remove_binary_val_set_duplicates(
+                    concept_data=concept_data, validation_dataset=np.load(validation_dataset_path)
+                )
 
                 for batch_n, (pos_examples, neg_examples) in enumerate(concept_data):
                     pos_examples, neg_examples = _balance_binary_example_sets(
@@ -235,9 +266,11 @@ def obtain_cavs_by_approach(approach: str):
                 concept_data = load_continuous_concept_examples_with_prefix(
                     approach_path=approach_path, file_prefix=prefix
                 )
-                concept_name = CONCEPT_NAMES[concept_i]
                 validation_dataset_path = VALIDATION_DATASET_PATHS[concept_i]
                 validation_labels_set_path = VALIDATION_LABEL_SET_PATHS[concept_i]
+                concept_data = _remove_continuous_val_set_duplicates(
+                    concept_data=concept_data, validation_dataset=np.load(validation_dataset_path)
+                )
 
                 for batch_n, (examples, labels) in enumerate(concept_data):
                     if len(examples) < 10:

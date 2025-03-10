@@ -63,6 +63,18 @@ def _balance_example_sets(pos_examples, neg_examples):
     return pos_examples, neg_examples
 
 
+def _remove_val_set_duplicates(concept_data, validation_dataset):
+    validation_set = set(arr.tobytes() for arr in validation_dataset)
+    new_concept_arr = []
+
+    for pos_examples, neg_examples in concept_data:
+        new_pos_examples_arr = [ex for ex in pos_examples if ex.tobytes() not in validation_set]
+        new_neg_examples_arr = [ex for ex in neg_examples if ex.tobytes() not in validation_set]
+        new_concept_arr.append((np.array(new_pos_examples_arr), np.array(new_neg_examples_arr)))
+
+    return new_concept_arr
+
+
 def _create_expanding_sample_sets(pos_examples, neg_examples):
     n = len(pos_examples)
     sample_sizes = []
@@ -107,6 +119,10 @@ def obtain_cavs_by_approach(approach: str):
             concept_name = CONCEPT_NAMES[concept_i]
             validation_dataset_path = VALIDATION_DATASET_PATHS[concept_i]
             validation_labels_set_path = VALIDATION_LABEL_SET_PATHS[concept_i]
+
+            concept_data = _remove_val_set_duplicates(
+                concept_data=concept_data, validation_dataset=np.load(validation_dataset_path)
+            )
 
             for batch_n, (pos_examples, neg_examples) in enumerate(concept_data):
                 pos_examples, neg_examples = _balance_example_sets(pos_examples, neg_examples)
