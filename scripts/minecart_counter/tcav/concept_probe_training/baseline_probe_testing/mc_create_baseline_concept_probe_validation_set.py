@@ -10,27 +10,30 @@ from rl_tcav import BCEValidationSetCurator, CCEValidationSetCurator
 random.seed(28)
 np.random.seed(28)
 tf.random.set_seed(28)
-
+from .constants import (
+    CONCEPT_DATA_APPROACH_PATH_BASE,
+    CONCEPT_NAMES,
+    CONCEPT_PREFIXES,
+    VALIDATION_SET_TARGET_SIZES,
+)
 
 if __name__ == "__main__":
 
-    concept_data_approach_path_base = "rl_tcav_data/concept_examples/minecart_counter/"
-    target_size = 10_000
+    cce_validation_set_curator = CCEValidationSetCurator(
+        concept_data_approach_path_base=CONCEPT_DATA_APPROACH_PATH_BASE,
+        concept_file_prefix=CONCEPT_PREFIXES[0],
+        concept_name=CONCEPT_NAMES[0],
+        environment_name="minecart_counter",
+        target_size=VALIDATION_SET_TARGET_SIZES[0],
+    )
 
     bce_validation_set_curator = BCEValidationSetCurator(
-        concept_data_approach_path_base=concept_data_approach_path_base,
-        concept_file_prefix="binary_concept_minecart_1_left",
-        concept_name="minecart_1_left",
+        concept_data_approach_path_base=CONCEPT_DATA_APPROACH_PATH_BASE,
+        concept_file_prefix=CONCEPT_PREFIXES[1],
+        concept_name=CONCEPT_NAMES[1],
         environment_name="minecart_counter",
-        target_size=target_size,
+        target_size=VALIDATION_SET_TARGET_SIZES[1],
     )
-    bce_validation_set_curator.curate_validation_set()
 
-    cce_validation_set_curator = CCEValidationSetCurator(
-        concept_data_approach_path_base=concept_data_approach_path_base,
-        concept_file_prefix="continuous_concept_minecarts_n",
-        concept_name="minecarts_n",
-        environment_name="minecart_counter",
-        target_size=target_size,
-    )
     cce_validation_set_curator.curate_validation_set()
+    bce_validation_set_curator.curate_validation_set()
