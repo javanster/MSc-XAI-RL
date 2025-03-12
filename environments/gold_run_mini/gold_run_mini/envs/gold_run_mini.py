@@ -267,8 +267,6 @@ class GoldRunMini(Env):
             self.agent.x = original_agent_x
             self.agent.y = original_agent_y
 
-        new_observation = self._get_obs()
-
         reward = self.STEP_PENALTY
         terminated = False
         truncated = False
@@ -342,6 +340,8 @@ class GoldRunMini(Env):
 
         if self.episode_step >= 200:
             truncated = True
+
+        new_observation = self._get_obs()
 
         return new_observation, reward, terminated, truncated, info
 

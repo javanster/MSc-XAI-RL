@@ -22,6 +22,7 @@ dependencies = [
     "pandas>=2.2.3",
     "pygame>=2.6.1",
     "scikit-learn>=1.6.1",
+    "seaborn>=0.13.2",
     "swig>=4.3.0",
     "tensorflow>=2.18.0",
     "tqdm>=4.67.1",
@@ -41,5 +42,5 @@ gem-collector = { path = "environments/gem_collector" }
 box-escape-lite = { path = "environments/box_escape_lite" }
 ccr = { path = "environments/ccr" }
 changing-supervisor = { path = "environments/changing_supervisor" }
-minecart-counter = { path = "environments/minecart_counter" }
 gold-run-mini = { path = "environments/gold_run_mini" }
+minecart-counter = { path = "environments/minecart_counter" }

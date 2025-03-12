@@ -229,8 +229,6 @@ class MinecartCounter(Env):
                 self.agent.x = original_agent_x
                 self.agent.y = original_agent_y
 
-        new_observation = self._get_obs()
-
         reward = -0.005
         terminated = False
         truncated = False
@@ -257,6 +255,8 @@ class MinecartCounter(Env):
             "correct_goal_reached": correct_goal_reached,
             "truncated": truncated,
         }
+
+        new_observation = self._get_obs()
 
         return new_observation, reward, terminated, truncated, info
 
