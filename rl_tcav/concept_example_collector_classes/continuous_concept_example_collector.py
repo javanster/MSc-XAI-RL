@@ -119,23 +119,23 @@ class ContinuousConceptExampleCollector(ConceptExampleCollector):
                         )
                         break
 
-                    concept_collected = concept.check_presence(
-                        env=self.env, observation=observation
-                    )
+                    if not (terminated or truncated):
+                        concept_collected = concept.check_presence(
+                            env=self.env, observation=observation
+                        )
 
-                    if concept_collected:
-                        pbar.update(1)
+                        if concept_collected:
+                            pbar.update(1)
+
+                        action = action_selection_callback(observation)
+                        observation, _, terminated, truncated, _ = self.env.step(action)
+                    else:
+                        observation, _ = self.env.reset()
+                        terminated, truncated = False, False
 
                     if self.track_example_accumulation:
                         pos_examples = self.examples_accumulated[concept.name]
                         pos_examples.append(len(concept.examples))
-
-                    if terminated or truncated:
-                        observation, _ = self.env.reset()
-                        terminated, truncated = False, False
-                    else:
-                        action = action_selection_callback(observation)
-                        observation, _, terminated, truncated, _ = self.env.step(action)
 
                     iterations += 1
 

@@ -131,33 +131,33 @@ class BinaryConceptExampleCollector(ConceptExampleCollector):
                     positive_presence: bool = False
                     negative_presence: bool = False
 
-                    if len(concept.positive_examples) < example_count_per_class:
-                        positive_presence = concept.check_positive_presence(
-                            env=self.env, observation=observation
-                        )
-                    if (
-                        not positive_presence
-                        and len(concept.negative_examples) < example_count_per_class
-                    ):
-                        negative_presence = concept.check_negative_presence(
-                            env=self.env, observation=observation
-                        )
+                    if not (terminated or truncated):
+                        if len(concept.positive_examples) < example_count_per_class:
+                            positive_presence = concept.check_positive_presence(
+                                env=self.env, observation=observation
+                            )
+                        if (
+                            not positive_presence
+                            and len(concept.negative_examples) < example_count_per_class
+                        ):
+                            negative_presence = concept.check_negative_presence(
+                                env=self.env, observation=observation
+                            )
 
-                    if positive_presence or negative_presence:
-                        pbar.update(1)
+                        if positive_presence or negative_presence:
+                            pbar.update(1)
+
+                        action = action_selection_callback(observation)
+                        observation, _, terminated, truncated, _ = self.env.step(action)
+                    else:
+                        observation, _ = self.env.reset()
+                        terminated, truncated = False, False
 
                     if self.track_example_accumulation:
                         pos_examples = self.pos_examples_accumulated[concept.name]
                         pos_examples.append(len(concept.positive_examples))
                         neg_examples = self.neg_examples_accumulated[concept.name]
                         neg_examples.append(len(concept.negative_examples))
-
-                    if terminated or truncated:
-                        observation, _ = self.env.reset()
-                        terminated, truncated = False, False
-                    else:
-                        action = action_selection_callback(observation)
-                        observation, _, terminated, truncated, _ = self.env.step(action)
 
                     iterations += 1
 

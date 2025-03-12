@@ -44,6 +44,24 @@ class BinaryConcept:
         self.negative_examples: List[np.ndarray] = (
             negative_examples if negative_examples is not None else []
         )
+        self._positive_hashes = {self._hash_obs(obs) for obs in self.positive_examples}
+        self._negative_hashes = {self._hash_obs(obs) for obs in self.negative_examples}
+
+    def _hash_obs(self, observation: np.ndarray) -> int:
+        """
+        Compute a hash for the observation based on its bytes representation.
+
+        Parameters
+        ----------
+        observation : np.ndarray
+            The observation to hash.
+
+        Returns
+        -------
+        int
+            The computed hash value.
+        """
+        return hash(observation.tobytes())
 
     def check_positive_presence(self, env: Env, observation: np.ndarray) -> bool:
         """
@@ -70,10 +88,12 @@ class BinaryConcept:
         """
         if not self.observation_presence_callback:
             raise ValueError("No observation callback provided in constructor")
-        if any(np.array_equal(observation, x) for x in self.positive_examples):
+        obs_hash = self._hash_obs(observation)
+        if obs_hash in self._positive_hashes:
             return False
         if self.observation_presence_callback(env):
             self.positive_examples.append(observation)
+            self._positive_hashes.add(obs_hash)
             return True
         return False
 
@@ -102,10 +122,12 @@ class BinaryConcept:
         """
         if not self.observation_presence_callback:
             raise ValueError("No observation callback provided in constructor")
-        if any(np.array_equal(observation, x) for x in self.negative_examples):
+        obs_hash = self._hash_obs(observation)
+        if obs_hash in self._negative_hashes:
             return False
         if not self.observation_presence_callback(env):
             self.negative_examples.append(observation)
+            self._negative_hashes.add(obs_hash)
             return True
         return False
 

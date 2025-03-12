@@ -55,6 +55,25 @@ class ContinuousConcept:
         )
         self.examples: List[np.ndarray] = examples if examples is not None else []
         self.labels: List[float] = labels if labels is not None else []
+        self._example_hashes = (
+            {self._hash_obs(obs) for obs in self.examples} if self.examples else set()
+        )
+
+    def _hash_obs(self, observation: np.ndarray) -> int:
+        """
+        Compute a hash for the observation based on its bytes representation.
+
+        Parameters
+        ----------
+        observation : np.ndarray
+            The observation to hash.
+
+        Returns
+        -------
+        int
+            The computed hash value.
+        """
+        return hash(observation.tobytes())
 
     def check_presence(self, env: Env, observation: np.ndarray) -> bool:
         """
@@ -79,11 +98,13 @@ class ContinuousConcept:
         """
         if not self.observation_presence_callback:
             raise ValueError("No observation presence callback provided in constructor")
-        if any(np.array_equal(observation, x) for x in self.examples):
+        obs_hash = self._hash_obs(observation)
+        if obs_hash in self._example_hashes:
             return False
         label = self.observation_presence_callback(env)
         self.examples.append(observation)
         self.labels.append(label)
+        self._example_hashes.add(obs_hash)
         return True
 
     def _ensure_save_directory_exists(self, directory_path: str) -> None:
