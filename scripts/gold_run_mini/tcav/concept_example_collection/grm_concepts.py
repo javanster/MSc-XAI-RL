@@ -12,14 +12,14 @@ def _env_validation(env: Env) -> None:
 
 def is_gold_above(env: Env) -> bool:
     """
-    Checks if a gold chunk is at least 1 cell above the agent, no matter the x coordinate, in the
+    Checks if a gold chunk is at least 1 cell directly above the agent, in the
     current state of the given instance of the GoldRunMini environment.
     """
     _env_validation(env)
     agent = env.unwrapped.agent
     gold_chunks = env.unwrapped.gold_chunks
     for gc in gold_chunks:
-        if gc.y < agent.y:
+        if gc.y < agent.y and gc.x == agent.x:
             return True
     return False
 
@@ -38,6 +38,14 @@ def is_lava_1_above(env: Env) -> bool:
     return False
 
 
+def is_gold_above_and_lava_1_above(env: Env) -> bool:
+    return is_gold_above(env) and is_lava_1_above(env)
+
+
+def is_gold_above_and_not_lava_1_above(env: Env) -> bool:
+    return is_gold_above(env) and not is_lava_1_above(env)
+
+
 def get_grm_concepts():
     c_gold_above = BinaryConcept(
         name="gold_above",
@@ -51,4 +59,21 @@ def get_grm_concepts():
         environment_name=ENV_NAME,
     )
 
-    return [c_gold_above, c_lava_1_above]
+    c_gold_above_and_lava_1_above = BinaryConcept(
+        name="gold_above_and_lava_1_above",
+        observation_presence_callback=is_gold_above_and_lava_1_above,
+        environment_name=ENV_NAME,
+    )
+
+    c_gold_above_and_not_lava_1_above = BinaryConcept(
+        name="gold_above_and_not_lava_1_above",
+        observation_presence_callback=is_gold_above_and_not_lava_1_above,
+        environment_name=ENV_NAME,
+    )
+
+    return [
+        c_gold_above,
+        c_lava_1_above,
+        c_gold_above_and_lava_1_above,
+        c_gold_above_and_not_lava_1_above,
+    ]
