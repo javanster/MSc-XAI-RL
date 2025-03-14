@@ -160,16 +160,14 @@ def obtain_cavs_by_approach(approach: str):
 
                         cav_dir = f"rl_tcav_data/cavs/baseline_concept_probes_experiment/gem_collector/model_{MODEL_OF_INTEREST_NAME}/{approach}/concept_{concept_name}/batch_{batch_n}/"
                         _ensure_save_directory_exists(cav_dir)
-                        cav_filename = (
-                            f"{cav_dir}cav_samplesize{len(pos_sample)}_layer{layer_index}.npy"
-                        )
+                        cav_filename = f"{cav_dir}cav_samplesize{len(pos_sample) + len(neg_sample)}_layer{layer_index}.npy"
                         np.save(cav_filename, cav.vector)
 
                         results.append(
                             {
                                 "concept_name": concept_name,
                                 "batch_n": batch_n,
-                                "sample_size": len(pos_sample),
+                                "sample_size": len(pos_sample) + len(neg_sample),
                                 "layer_index": layer_index,
                                 "accuracy": accuracy,
                                 "concept_probe_score": concept_probe_score,
