@@ -93,7 +93,9 @@ class TcavClassLabelExampleCollector:
             )
 
         with tqdm(
-            total=examples_per_output_class * self.env.action_space.n, unit="example"
+            total=examples_per_output_class * self.env.action_space.n,
+            unit="example",
+            dynamic_ncols=True,
         ) as pbar:
             observation, _ = self.env.reset()
             observation = cast(np.ndarray, observation)
@@ -107,28 +109,7 @@ class TcavClassLabelExampleCollector:
                     print("Max iterations reached, ending collection...")
                     return
 
-                action = self.action_callback(observation, step)
-                examples_of_action = self.collected_examples[action]
-                examples_hashes = self.collected_examples_hashes[action]
-                obs_hash = observation.tobytes()
-
-                if (
-                    len(examples_of_action) < examples_per_output_class
-                    and obs_hash not in examples_hashes
-                ):
-                    examples_of_action.append(observation)
-                    examples_hashes.add(obs_hash)
-                    pbar.update(1)
-
-                    if self._is_done(examples_per_output_class=examples_per_output_class):
-                        print("\nExample collection of class labels complete!\n")
-                        return
-
-                observation, _, terminated, truncated, _ = self.env.step(action=action)
-                observation = cast(np.ndarray, observation)
-                terminated = cast(bool, terminated)
-                truncated = cast(bool, truncated)
-                step += 1
+                pbar.set_description(f"Iteration: {iterations}/{max_iterations}")
 
                 if terminated or truncated:
                     observation, _ = self.env.reset()
@@ -137,7 +118,31 @@ class TcavClassLabelExampleCollector:
                     truncated = False
                     step = 0
 
-                iterations += 1
+                else:
+                    action = self.action_callback(observation, step)
+                    examples_of_action = self.collected_examples[action]
+                    examples_hashes = self.collected_examples_hashes[action]
+                    obs_hash = observation.tobytes()
+
+                    if (
+                        len(examples_of_action) < examples_per_output_class
+                        and obs_hash not in examples_hashes
+                    ):
+                        examples_of_action.append(observation)
+                        examples_hashes.add(obs_hash)
+                        pbar.update(1)
+
+                        if self._is_done(examples_per_output_class=examples_per_output_class):
+                            print("\nExample collection of class labels complete!\n")
+                            return
+
+                    observation, _, terminated, truncated, _ = self.env.step(action=action)
+                    observation = cast(np.ndarray, observation)
+                    terminated = cast(bool, terminated)
+                    truncated = cast(bool, truncated)
+                    step += 1
+
+                    iterations += 1
 
     def save_examples(self, directory_path: str) -> None:
         """
