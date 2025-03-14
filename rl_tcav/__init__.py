@@ -11,6 +11,6 @@ from .concept_probes.baseline_binary_concept_probe import BaselineBinaryConceptP
 from .concept_probes.baseline_continuous_concept_probe import BaselineContinuousConceptProbe
 from .model_activation_obtainer import ModelActivationObtainer
 from .tcav_class_label_example_collector import TcavClassLabelExampleCollector
-from .tcav_score_calculator import TcavScoreCalculator
+from .tcav_scorer import TcavScorer
 from .utils.bce_validation_set_curator import BCEValidationSetCurator
 from .utils.cce_validation_set_curator import CCEValidationSetCurator
