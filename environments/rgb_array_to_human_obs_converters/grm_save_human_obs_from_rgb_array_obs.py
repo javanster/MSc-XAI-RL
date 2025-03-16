@@ -7,7 +7,7 @@ from .ensure_save_dir_exists import ensure_save_directory_exists
 
 
 def grm_save_human_obs_from_rgb_array_obs(
-    array_observations: np.ndarray, save_dir: str, file_prefix: str
+    array_observations: np.ndarray, save_dir: str, file_prefix: str, render_raw_pixels: bool
 ) -> None:
     """
     Render and save human-readable images from an array of observations.
@@ -23,9 +23,13 @@ def grm_save_human_obs_from_rgb_array_obs(
         The directory path where the rendered images will be saved.
     file_prefix : str
         The prefix used for the filenames of the saved images.
+    render_raw_pixels : bool
+        Whether the images should be saved as raw pixels or the human friendly version.
     """
     pygame.init()
-    env = gym.make(id="GoldRunMini-v1", render_mode=None, render_fps=1000)
+    env = gym.make(
+        id="GoldRunMini-v1", render_mode=None, render_fps=1000, render_raw_pixels=render_raw_pixels
+    )
     env = env.unwrapped
     env.reset()
 
