@@ -54,6 +54,17 @@ class GoldRunMini(Env):
         self.WALL_COLOR = (77, 77, 77)
         self.VALID_PASSAGE_POSITIONS: List[Tuple[int, int]] = [(5, 0), (10, 5), (5, 10), (0, 5)]
 
+        self.ENTITY_COLOR_MAP = {
+            "agent": self.AGENT_COLOR,
+            "lava": self.LAVA_COLOR,
+            "gold": self.GOLD_COLOR,
+            "closed_passage": self.CLOSED_PASSAGE_COLOR,
+            "open_passage": self.OPEN_PASSAGE_COLOR,
+            "closed_early_termination_passage": self.CLOSED_EARLY_TERMINATION_PASSAGE_COLOR,
+            "open_early_termination_passage": self.OPEN_EARLY_TERMINATION_PASSAGE_COLOR,
+            "wall": self.WALL_COLOR,
+        }
+
         self.STEP_PENALTY = -0.001 if no_lava_termination else -0.0026
         self.LAVA_PENALTY = -0.03 if no_lava_termination else -0.48
         self.GOLD_REWARD = 0.309 if no_lava_termination else 0.2617
@@ -547,4 +558,83 @@ class GoldRunMini(Env):
 
     def _load_sprite(self, sprite_name: str) -> pygame.Surface:
         path: Traversable = resources.files(self.SPRITE_MODULE_PATH) / f"{sprite_name}.png"
-        return pygame.image.load(str(path)).convert_alpha()
+        return pygame.image.load(str(path))
+
+    def _set_entity(self, entity_type: str, pos: Tuple[int, int]):
+        if entity_type == "agent":
+            self.agent = Entity(
+                color=self.ENTITY_COLOR_MAP[entity_type],
+                grid_side_length=self.grid_side_length,
+                starting_position=pos,
+            )
+        elif entity_type == "lava":
+            self.lava.append(
+                Entity(
+                    grid_side_length=self.grid_side_length,
+                    color=self.ENTITY_COLOR_MAP[entity_type],
+                    starting_position=pos,
+                )
+            )
+        elif entity_type == "wall":
+            self.walls.append(
+                Entity(
+                    grid_side_length=self.grid_side_length,
+                    color=self.ENTITY_COLOR_MAP[entity_type],
+                    starting_position=pos,
+                )
+            )
+        elif entity_type == "gold":
+            self.gold_chunks.append(
+                Entity(
+                    grid_side_length=self.grid_side_length,
+                    color=self.ENTITY_COLOR_MAP[entity_type],
+                    starting_position=pos,
+                )
+            )
+        elif entity_type == "open_passage" or entity_type == "closed_passage":
+            self.passage = Entity(
+                grid_side_length=self.grid_side_length,
+                color=self.ENTITY_COLOR_MAP[entity_type],
+                starting_position=pos,
+            )
+        elif (
+            entity_type == "open_early_termination_passage"
+            or entity_type == "closed_early_termination_passage"
+        ):
+            self.early_term_passage = Entity(
+                grid_side_length=self.grid_side_length,
+                color=self.ENTITY_COLOR_MAP[entity_type],
+                starting_position=pos,
+            )
+
+    def set_state_based_on_obs_grid(self, obs_grid: np.ndarray) -> None:
+        """
+        Update the environment's state based on an observation grid.
+
+        This method resets the environment by clearing the current entities such as walls,
+        lava, gold chunks, and passages. It then iterates over each cell in the provided
+        observation grid, compares the cell's RGB color with the predefined ENTITY_COLOR_MAP, and
+        sets the corresponding entity at that position using the helper method _set_entity.
+
+        Parameters
+        ----------
+        obs_grid : np.ndarray
+            A NumPy array representing the observation grid with shape
+            (grid_side_length, grid_side_length, 3). Each cell's RGB color is used to
+            determine which entity should be placed at that grid position.
+
+        Returns
+        -------
+        None
+        """
+        self.walls = []
+        self.lava = []
+        self.gold_chunks = []
+        self.early_term_passage = None
+        self.passage = None
+
+        for y, x in itertools.product(range(self.grid_side_length), repeat=2):
+            color = tuple(obs_grid[y, x])
+            for entity_type, color_of_type in self.ENTITY_COLOR_MAP.items():
+                if color == color_of_type:
+                    self._set_entity(entity_type=entity_type, pos=(x, y))
