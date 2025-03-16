@@ -39,10 +39,10 @@ profile = "black"
 line_length = 100
 
 [tool.uv.sources]
-gem-collector = { path = "environments/gem_collector" }
 box-escape-lite = { path = "environments/box_escape_lite" }
 ccr = { path = "environments/ccr" }
 changing-supervisor = { path = "environments/changing_supervisor" }
+gold-run = { path = "environments/gold_run" }
+gem-collector = { path = "environments/gem_collector" }
 gold-run-mini = { path = "environments/gold_run_mini" }
 minecart-counter = { path = "environments/minecart_counter" }
-gold-run = { path = "environments/gold_run" }

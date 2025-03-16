@@ -58,6 +58,14 @@ class MinecartCounter(Env):
             7: (0, 7),
             8: (1, 1),
         }
+
+        self.ENTITY_COLOR_MAP = {
+            "agent": self.AGENT_COLOR,
+            "wall": self.WALL_COLOR,
+            "minecart": self.MINECART_COLOR,
+            **{f"goal_{i}": color for i, color in self.GOAL_COLORS.items()},
+        }
+
         self.SCATTER_MINECARTS: bool = scatter_minecarts
         self.render_raw_pixels = render_raw_pixels
         self.SPRITE_MODULE_PATH: str = "minecart_counter.envs.sprites"
@@ -176,8 +184,8 @@ class MinecartCounter(Env):
 
         self.target_direction = random.randint(1, 8)
         self.minecart_horizontal_flips = [
-            random.randint(0, 1) == 1 for _ in range(self.target_direction)
-        ]
+            random.randint(0, 1) == 1 for _ in range(1_000_000)
+        ]  # Not great, not terrible.
 
         self._place_static_objects()
         self._place_minecarts()
@@ -383,4 +391,65 @@ class MinecartCounter(Env):
 
     def _load_sprite(self, sprite_name: str) -> pygame.Surface:
         path: Traversable = resources.files(self.SPRITE_MODULE_PATH) / f"{sprite_name}.png"
-        return pygame.image.load(str(path)).convert_alpha()
+        return pygame.image.load(str(path))
+
+    def _set_entity(self, entity_type: str, pos: Tuple[int, int]):
+        if entity_type == "agent":
+            self.agent = Entity(
+                color=self.ENTITY_COLOR_MAP[entity_type],
+                grid_side_length=self.grid_side_length,
+                starting_position=pos,
+            )
+        elif entity_type == "minecart":
+            self.minecarts.append(
+                Entity(
+                    grid_side_length=self.grid_side_length,
+                    color=self.ENTITY_COLOR_MAP[entity_type],
+                    starting_position=pos,
+                )
+            )
+        elif entity_type == "wall":
+            self.walls.append(
+                Entity(
+                    grid_side_length=self.grid_side_length,
+                    color=self.ENTITY_COLOR_MAP[entity_type],
+                    starting_position=pos,
+                )
+            )
+        elif entity_type.startswith("goal"):
+            self.goals.append(
+                Entity(
+                    grid_side_length=self.grid_side_length,
+                    color=self.ENTITY_COLOR_MAP[entity_type],
+                    starting_position=pos,
+                )
+            )
+
+    def set_state_based_on_obs_grid(self, obs_grid: np.ndarray) -> None:
+        """
+        Update the environment's state based on an observation grid.
+
+        This method clears the current lists of walls, goals, and minecarts, and then
+        iterates over each cell in the provided observation grid. For each cell, if its
+        color matches one of the colors in ENTITY_COLOR_MAP, the corresponding entity is
+        created at that grid position using the _set_entity helper method.
+
+        Parameters
+        ----------
+        obs_grid : np.ndarray
+            A NumPy array of shape (grid_side_length, grid_side_length, 3) representing the
+            observation grid, where each cell contains an RGB color tuple.
+
+        Returns
+        -------
+        None
+        """
+        self.walls = []
+        self.goals = []
+        self.minecarts = []
+
+        for y, x in itertools.product(range(self.grid_side_length), repeat=2):
+            color = tuple(obs_grid[y, x])
+            for entity_type, color_of_type in self.ENTITY_COLOR_MAP.items():
+                if color == color_of_type:
+                    self._set_entity(entity_type=entity_type, pos=(x, y))

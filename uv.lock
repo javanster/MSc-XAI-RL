@@ -365,7 +365,7 @@ wheels = [
 
 [[package]]
 name = "gem-collector"
-version = "3.0.1"
+version = "3.0.12"
 source = { directory = "environments/gem_collector" }
 dependencies = [
     { name = "gymnasium" },
@@ -427,7 +427,7 @@ requires-dist = [
 
 [[package]]
 name = "gold-run-mini"
-version = "1.1.14"
+version = "1.1.17"
 source = { directory = "environments/gold_run_mini" }
 dependencies = [
     { name = "gymnasium" },
@@ -824,7 +824,7 @@ wheels = [
 
 [[package]]
 name = "minecart-counter"
-version = "2.0.7"
+version = "2.0.12"
 source = { directory = "environments/minecart_counter" }
 dependencies = [
     { name = "gymnasium" },
