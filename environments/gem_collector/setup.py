@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="gem_collector",
-    version="3.0.1",
+    version="3.0.12",
     packages=find_packages(),
     install_requires=[
         "gymnasium",

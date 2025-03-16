@@ -641,7 +641,7 @@ class GemCollector(Env):
             A Pygame surface object representing the loaded sprite.
         """
         path: Traversable = resources.files(self.SPRITE_MODULE_PATH) / f"{sprite_name}.png"
-        return pygame.image.load(str(path)).convert_alpha()
+        return pygame.image.load(str(path))
 
     def _scale_and_blit_sprite(
         self,
@@ -753,7 +753,7 @@ class GemCollector(Env):
 
         for obj_type in self.obj_lists.keys():
             if obj_type == "lava":
-                break
+                continue
             gem_list = self.obj_lists[obj_type]
             for gem in gem_list:
                 self._scale_and_blit_sprite(
@@ -764,16 +764,6 @@ class GemCollector(Env):
                     y=gem.y,
                     random_rotate=True,
                 )
-
-        for rock in self.obj_lists["rock"]:
-            self._scale_and_blit_sprite(
-                sprite=sprites["rock"],
-                canvas=canvas,
-                pix_square_size=pix_square_size,
-                x=rock.x,
-                y=rock.y,
-                random_rotate=True,
-            )
 
         self._scale_and_blit_sprite(
             sprite=sprites[f"agent_{self.active_agent_sprite}"],
@@ -860,3 +850,77 @@ class GemCollector(Env):
         pygame.event.pump()
         pygame.display.update()
         self.clock.tick(self.render_fps)  # type: ignore
+
+    def _set_entity(self, entity_type: str, pos: Tuple[int, int]):
+        """
+        Initialize or update an entity in the environment based on its type and position.
+
+        Parameters
+        ----------
+        entity_type : str
+            The type of the entity to set. Valid values include "agent", "npc_1", "npc_2",
+            or any other key corresponding to a collectible object in the environment.
+        pos : Tuple[int, int]
+            The (x, y) coordinates where the entity should be initialized or updated.
+
+        Returns
+        -------
+        None
+        """
+        if entity_type == "agent":
+            self.agent = Miner(
+                grid_side_length=self.grid_side_length,
+                color=self.entity_colors["agent"],
+                is_moving_left=False,
+                starting_position=pos,
+            )
+        elif entity_type == "npc_1":
+            self.npc_1 = Miner(
+                grid_side_length=self.grid_side_length,
+                color=self.entity_colors["npc_1"],
+                is_moving_left=False,
+                starting_position=pos,
+            )
+        elif entity_type == "npc_2":
+            self.npc_2 = Miner(
+                grid_side_length=self.grid_side_length,
+                color=self.entity_colors["npc_2"],
+                is_moving_left=False,
+                starting_position=pos,
+            )
+        else:
+            self.obj_lists[entity_type].append(
+                Entity(
+                    grid_side_length=self.grid_side_length,
+                    color=self.entity_colors[entity_type],
+                    starting_position=pos,
+                )
+            )
+
+    def set_state_based_on_obs_grid(self, obs_grid: np.ndarray) -> None:
+        """
+        Update the environment's state by setting entities based on an observation grid.
+
+        This method clears existing collectible entities and then iterates over the
+        observation grid. For each cell, if the color matches an entity type (excluding walls),
+        the corresponding entity is set at that position.
+
+        Parameters
+        ----------
+        obs_grid : np.ndarray
+            A NumPy array representing the environment's observation grid with RGB color values.
+
+        Returns
+        -------
+        None
+        """
+        for obj_list_key in self.obj_lists.keys():
+            self.obj_lists[obj_list_key] = []
+
+        for y, x in itertools.product(range(self.grid_side_length), repeat=2):
+            color = tuple(obs_grid[y, x])
+            for entity_type, color_of_type in self.entity_colors.items():
+                if entity_type.startswith("wall"):
+                    continue
+                if color == color_of_type:
+                    self._set_entity(entity_type=entity_type, pos=(x, y))
