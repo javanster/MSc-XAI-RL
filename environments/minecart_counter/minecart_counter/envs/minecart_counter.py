@@ -408,28 +408,12 @@ class MinecartCounter(Env):
                     starting_position=pos,
                 )
             )
-        elif entity_type == "wall":
-            self.walls.append(
-                Entity(
-                    grid_side_length=self.grid_side_length,
-                    color=self.ENTITY_COLOR_MAP[entity_type],
-                    starting_position=pos,
-                )
-            )
-        elif entity_type.startswith("goal"):
-            self.goals.append(
-                Entity(
-                    grid_side_length=self.grid_side_length,
-                    color=self.ENTITY_COLOR_MAP[entity_type],
-                    starting_position=pos,
-                )
-            )
 
     def set_state_based_on_obs_grid(self, obs_grid: np.ndarray) -> None:
         """
         Update the environment's state based on an observation grid.
 
-        This method clears the current lists of walls, goals, and minecarts, and then
+        This method clears the current lists of minecarts, and then
         iterates over each cell in the provided observation grid. For each cell, if its
         color matches one of the colors in ENTITY_COLOR_MAP, the corresponding entity is
         created at that grid position using the _set_entity helper method.
@@ -444,8 +428,6 @@ class MinecartCounter(Env):
         -------
         None
         """
-        self.walls = []
-        self.goals = []
         self.minecarts = []
 
         for y, x in itertools.product(range(self.grid_side_length), repeat=2):
