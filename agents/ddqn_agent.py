@@ -6,12 +6,11 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, cast
 import gymnasium as gym
 import numpy as np
 import tensorflow as tf
+import wandb
 from gymnasium import Env
 from keras.api.models import Sequential, clone_model
 from keras.api.optimizers import Adam
 from tqdm import tqdm
-
-import wandb
 
 from .custom_types.ddqn_model_training_config import DDQNModelTrainingConfig
 from .custom_types.experience import Experience
@@ -245,7 +244,7 @@ class DDQNAgent:
             os.makedirs("models")
 
         model_dir: str = (
-            f"models/{env_name}/{wandb.run.name}"  # type: ignore
+            f"models/{env_name}/{wandb.run.name}"
             if use_wandb
             else f"models/{env_name}/run_{int(time.time())}"
         )
@@ -528,7 +527,7 @@ class DDQNAgent:
 
         wandbLogger = WandbLogger(log_active=use_wandb, sweep_active=use_sweep, config=config)
         if use_wandb:
-            config = wandb.config  # type: ignore
+            config = wandb.config
 
         if not config:
             raise ValueError(
