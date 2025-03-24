@@ -191,3 +191,15 @@ class BaselineBinaryConceptProbe(ConceptProbe):
         self.concept_probe_score_on_validation_set = binary_concept_probe_score(
             y_val=validation_labels, y_pred=y_pred_binary
         )
+
+    def predict_concept_presence(self, inputs: np.ndarray):
+        layer_activations = self.model_activation_obtainer.get_layer_activations(
+            layer_index=self.model_layer_index,
+            model_inputs=inputs,
+            flatten=True,
+        )
+
+        y_pred = self.binary_classifier.predict(layer_activations)
+        y_pred_binary = (y_pred >= 0.5).astype(int)
+
+        return y_pred_binary
