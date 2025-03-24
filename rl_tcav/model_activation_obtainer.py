@@ -1,6 +1,7 @@
 from typing import Callable
 
 import numpy as np
+import tensorflow as tf
 from keras import Model
 from keras.api.models import Sequential
 
@@ -99,7 +100,8 @@ class ModelActivationObtainer:
         """
         activation_model: Model = self._activation_models[layer_index]
         inputs_normalized = self.input_normalization_callback(model_inputs)
-        activations: np.ndarray = activation_model.predict(inputs_normalized)
+        inputs_tensor = tf.convert_to_tensor(inputs_normalized, dtype=tf.float32)
+        activations = activation_model(inputs_tensor)
 
         # If the layer is a Conv2D layer, flatten the output
         if flatten and len(activations.shape) == 4:
