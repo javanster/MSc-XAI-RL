@@ -4,6 +4,9 @@ from .concept_classes.continuous_concept import ContinuousConcept
 from .concept_example_collector_classes.binary_concept_example_collector import (
     BinaryConceptExampleCollector,
 )
+from .concept_example_collector_classes.binary_concept_example_collector_v2 import (
+    BinaryConceptExampleCollectorV2,
+)
 from .concept_example_collector_classes.continuous_concept_example_collector import (
     ContinuousConceptExampleCollector,
 )
