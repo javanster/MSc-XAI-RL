@@ -1,0 +1,3 @@
+CLASS_LABEL_EXAMPLE_SAVE_DIR_BASE_PATH = "rl_tcav_data/class_label_examples/gold_run_mini/"
+EXAMPLES_PER_OUTPUT_CLASS = 100_000
+MAX_ITERATIONS = 1_000_000
