@@ -16,6 +16,7 @@ from rl_tcav import (
     ContinuousConcept,
     ModelActivationObtainer,
 )
+from utils import ensure_directory_exists
 
 from ...constants import MODEL_OF_INTEREST_NAME, MODEL_OF_INTEREST_PATH
 from .constants import (
@@ -172,12 +173,6 @@ def _create_continuous_expanding_sample_sets(examples, labels):
     return samples
 
 
-def _ensure_save_directory_exists(directory_path: str) -> None:
-    directory = os.path.dirname(directory_path)
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
-
 def obtain_cavs_by_approach(approach: str):
     approach_path = f"{CONCEPT_DATA_APPROACH_PATH_BASE}{approach}/"
 
@@ -240,7 +235,7 @@ def obtain_cavs_by_approach(approach: str):
                             )
 
                             cav_dir = f"rl_tcav_data/cavs/baseline_concept_probes_experiment/minecart_counter/model_{MODEL_OF_INTEREST_NAME}/{approach}/concept_{concept_name}/batch_{batch_n}/"
-                            _ensure_save_directory_exists(cav_dir)
+                            ensure_directory_exists(cav_dir)
                             cav_filename = f"{cav_dir}cav_samplesize{len(pos_sample) + len(neg_sample)}_layer{layer_index}.npy"
                             np.save(cav_filename, cav.vector)
 
@@ -308,7 +303,7 @@ def obtain_cavs_by_approach(approach: str):
                             )
 
                             cav_dir = f"rl_tcav_data/cavs/baseline_concept_probes_experiment/minecart_counter/model_{MODEL_OF_INTEREST_NAME}/{approach}/concept_{concept_name}/batch_{batch_n}/"
-                            _ensure_save_directory_exists(cav_dir)
+                            ensure_directory_exists(cav_dir)
                             cav_filename = f"{cav_dir}cav_samplesize{len(example_sample)}_layer{layer_index}.npy"
                             np.save(cav_filename, cav.vector)
 
@@ -330,7 +325,7 @@ def obtain_cavs_by_approach(approach: str):
 
     df_results = pd.DataFrame(results)
     df_dir = f"rl_tcav_data/cavs/baseline_concept_probes_experiment/minecart_counter/model_{MODEL_OF_INTEREST_NAME}/{approach}/"
-    _ensure_save_directory_exists(df_dir)
+    ensure_directory_exists(df_dir)
     df_results.to_csv(
         f"{df_dir}concept_probe_scores_{approach}.csv",
         index=False,
