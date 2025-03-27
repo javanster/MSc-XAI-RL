@@ -3,7 +3,7 @@ import minecart_counter
 import numpy as np
 import pygame
 
-from .ensure_save_dir_exists import ensure_save_directory_exists
+from utils import ensure_directory_exists
 
 
 def mc_save_human_obs_from_rgb_array_obs(
@@ -43,6 +43,6 @@ def mc_save_human_obs_from_rgb_array_obs(
     for i, obs in enumerate(array_observations):
         env.set_state_based_on_obs_grid(obs)
         env._draw_entities()
-        ensure_save_directory_exists(save_dir)
+        ensure_directory_exists(save_dir)
         pygame.image.save(env.window, f"{save_dir}{file_prefix}_human_obs_{i}.png")
     pygame.quit()
