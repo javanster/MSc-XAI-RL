@@ -9,6 +9,7 @@ from keras.api.saving import load_model
 from tqdm import tqdm
 
 from rl_tcav import ModelActivationObtainer
+from utils import ensure_directory_exists
 
 from ..constants import MODEL_OF_INTEREST_NAME, MODEL_OF_INTEREST_PATH
 from .constants import ACTIVATIONS_N, CONCEPT_EXAMPLE_PATHS
@@ -42,12 +43,6 @@ def load_numpy_arrays_from_paths(paths, array_filename_prefix, array_filename_en
     return results
 
 
-def _ensure_save_directory_exists(directory_path: str) -> None:
-    directory = os.path.dirname(directory_path)
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
-
 def get_and_save_concept_example_activations(
     model: Sequential, approach_datasets: Dict[str, np.ndarray], concept_name: str
 ):
@@ -71,7 +66,7 @@ def get_and_save_concept_example_activations(
                         layer_index=layer_i, model_inputs=random_batch_sample, flatten=True
                     )
                     dir_path = f"/Volumes/MemoryBrick/MSc/rl_tcav_data/concept_example_layer_activations/minecart_counter/model_{MODEL_OF_INTEREST_NAME}/{approach}/concept_{concept_name}/layer_{layer_i}/"
-                    _ensure_save_directory_exists(dir_path)
+                    ensure_directory_exists(dir_path)
                     if len(activations) > 0:
                         np.save(
                             file=f"{dir_path}batch_{batch_i}_{len(activations)}_activations.npy",
