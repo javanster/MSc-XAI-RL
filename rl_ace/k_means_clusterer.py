@@ -119,6 +119,7 @@ class KMeansClusterer:
 
         for layer_i in model_layer_indexes:
             layer_save_directory_path = f"{save_directory_path}layer_{layer_i}/"
+            ensure_directory_exists(layer_save_directory_path)
 
             activations = self.model_activation_obtainer.get_layer_activations(
                 layer_index=layer_i, model_inputs=environment_observations, flatten=False
@@ -133,10 +134,6 @@ class KMeansClusterer:
                 desc=f"Clustering activations from layer {layer_i}",
             ) as pbar:
                 for k in range(2, max_k + 1):
-
-                    k_save_directory_path = f"{layer_save_directory_path}/k_{k}/"
-                    ensure_directory_exists(directory_path=k_save_directory_path)
-
                     cluster_labels, centroid_distances = self._cluster_activations(
                         activations=activations,
                         k=k,
@@ -145,7 +142,7 @@ class KMeansClusterer:
                     pbar.update(1)
 
                     np.save(
-                        f"{k_save_directory_path}/layer_{layer_i}_k_{k}_cluster_labels.npy",
+                        f"{layer_save_directory_path}k_{k}_cluster_labels.npy",
                         cluster_labels,
                     )
 
