@@ -22,6 +22,7 @@ dependencies = [
     "numpy>=2.0.2",
     "pandas>=2.2.3",
     "pygame>=2.6.1",
+    "scikit-fuzzy>=0.5.0",
     "scikit-learn>=1.6.1",
     "seaborn>=0.13.2",
     "swig>=4.3.0",
