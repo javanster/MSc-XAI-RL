@@ -8,8 +8,7 @@ from keras.api.models import Sequential
 from keras.api.saving import load_model
 from tqdm import tqdm
 
-from rl_tcav import ModelActivationObtainer
-from utils import ensure_directory_exists
+from utils import ModelActivationObtainer, ensure_directory_exists
 
 from ..constants import MODEL_OF_INTEREST_NAME, MODEL_OF_INTEREST_PATH
 from .constants import ACTIVATIONS_N, CONCEPT_EXAMPLE_PATHS
