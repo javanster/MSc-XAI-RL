@@ -45,9 +45,6 @@ class KMeansClusterer:
         """
         # Check if activations have more than 2 dimensions (batch, H, W, C)
         if activations.ndim > 2:
-            print(
-                f"Activations shape {activations.shape} detected. Averaging over spatial dimensions."
-            )
             return np.mean(activations, axis=(1, 2))
         else:
             return activations
