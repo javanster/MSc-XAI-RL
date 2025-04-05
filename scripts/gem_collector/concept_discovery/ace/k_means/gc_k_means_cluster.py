@@ -1,4 +1,5 @@
 import numpy as np
+from keras.api.saving import load_model
 
 from rl_ace import KMeansClusterer
 from utils import ModelActivationObtainer
