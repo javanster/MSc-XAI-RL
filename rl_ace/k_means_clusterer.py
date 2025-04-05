@@ -6,8 +6,7 @@ import pandas as pd
 from sklearn.cluster import KMeans
 from tqdm import tqdm
 
-from rl_tcav import ModelActivationObtainer
-from utils import ensure_directory_exists
+from utils import ModelActivationObtainer, ensure_directory_exists
 
 
 class KMeansClusterer:
