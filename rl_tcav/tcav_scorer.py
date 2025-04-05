@@ -4,8 +4,9 @@ from keras.api.layers import Input
 from keras.api.models import Model, Sequential
 from tensorflow import Tensor
 
+from utils import ModelActivationObtainer
+
 from .cav import Cav
-from .model_activation_obtainer import ModelActivationObtainer
 
 
 class TcavScorer:
