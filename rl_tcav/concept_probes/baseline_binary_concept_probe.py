@@ -7,9 +7,10 @@ from keras.api.optimizers import SGD
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 
+from utils import ModelActivationObtainer
+
 from ..cav import Cav
 from ..concept_classes.binary_concept import BinaryConcept
-from ..model_activation_obtainer import ModelActivationObtainer
 from .binary_concept_probe_score import binary_concept_probe_score
 from .concept_probe import ConceptProbe
 

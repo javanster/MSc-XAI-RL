@@ -7,9 +7,10 @@ from keras.api.optimizers import SGD
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 
+from utils import ModelActivationObtainer
+
 from ..cav import Cav
 from ..concept_classes.continuous_concept import ContinuousConcept
-from ..model_activation_obtainer import ModelActivationObtainer
 from .concept_probe import ConceptProbe
 
 

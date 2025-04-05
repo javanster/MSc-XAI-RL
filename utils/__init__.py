@@ -1,1 +1,2 @@
 from .ensure_directory_exists import ensure_directory_exists
+from .model_activation_obtainer import ModelActivationObtainer
