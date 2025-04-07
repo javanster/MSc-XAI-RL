@@ -25,8 +25,8 @@ class BinaryConceptExampleCollectorV2(ConceptExampleCollector):
         The Gymnasium environment used to collect observations.
     concepts : List[BinaryConcept]
         A list of BinaryConcept objects for which examples are collected.
-    max_iter_per_concept : int
-        The maximum number of iterations per concept during data collection.
+    max_iter : int
+        The maximum number of iterations for data collection.
     normalization_callback : Callable, optional
         A function used to normalize observations before passing them to the model.
     track_example_accumulation : bool
@@ -39,8 +39,8 @@ class BinaryConceptExampleCollectorV2(ConceptExampleCollector):
         The Gymnasium environment used to collect observations.
     concepts : List[BinaryConcept]
         A list of BinaryConcept objects for which examples will be collected.
-    max_iter_per_concept : int
-        The maximum number of iterations per concept during data collection.
+    max_iter : int
+                The maximum number of iterations for data collection.
     normalization_callback : str, optional
         The key for selecting the normalization callback. If not provided, no normalization is applied.
     track_example_accumulation : bool
