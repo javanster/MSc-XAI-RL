@@ -6,7 +6,7 @@ import gymnasium as gym
 
 from rl_tcav import BinaryConceptExampleCollectorV2
 
-from .constants import EXAMPLE_DATA_DIRECTORY_PATH, EXAMPLE_N
+from .constants import EXAMPLE_DATA_DIRECTORY_PATH, EXAMPLE_N, MAX_ITERATIONS
 from .gc_concepts import get_gc_concepts
 
 
@@ -18,7 +18,7 @@ def appr1():
     example_collector = BinaryConceptExampleCollectorV2(
         concepts=concept_list,
         env=env,
-        max_iter=100_000,
+        max_iter=MAX_ITERATIONS,
         track_example_accumulation=False,
         normalization_callback="image",
     )

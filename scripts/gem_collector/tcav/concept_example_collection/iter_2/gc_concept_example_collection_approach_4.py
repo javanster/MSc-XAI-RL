@@ -10,7 +10,7 @@ from keras.api.saving import load_model
 from rl_tcav import BinaryConceptExampleCollectorV2
 
 from ...constants import MORE_CAPABLE_MODEL_PATH
-from .constants import EXAMPLE_DATA_DIRECTORY_PATH, EXAMPLE_N
+from .constants import EXAMPLE_DATA_DIRECTORY_PATH, EXAMPLE_N, MAX_ITERATIONS
 from .gc_concepts import get_gc_concepts
 
 
@@ -21,7 +21,7 @@ def appr4():
     example_collector = BinaryConceptExampleCollectorV2(
         concepts=concept_list,
         env=env,
-        max_iter=100_000,
+        max_iter=MAX_ITERATIONS,
         track_example_accumulation=False,
         normalization_callback="image",
     )
