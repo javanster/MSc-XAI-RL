@@ -10,6 +10,9 @@ from .concept_example_collector_classes.binary_concept_example_collector_v2 impo
 from .concept_example_collector_classes.continuous_concept_example_collector import (
     ContinuousConceptExampleCollector,
 )
+from .concept_example_collector_classes.continuous_concept_example_collector_v2 import (
+    ContinuousConceptExampleCollectorV2,
+)
 from .concept_probes.baseline_binary_concept_probe import BaselineBinaryConceptProbe
 from .concept_probes.baseline_continuous_concept_probe import BaselineContinuousConceptProbe
 from .concept_probes.binary_concept_probe_score import binary_concept_probe_score
