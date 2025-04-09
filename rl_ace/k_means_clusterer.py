@@ -53,7 +53,7 @@ class KMeansClusterer:
         self,
         activations: np.ndarray,
         k: int,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Cluster activations using KMeans clustering.
 
@@ -66,18 +66,20 @@ class KMeansClusterer:
 
         Returns
         -------
-        Tuple[np.ndarray, np.ndarray]
+        Tuple[np.ndarray, np.ndarray, np.ndarray]
             A tuple containing:
             - labels: np.ndarray, cluster labels for each activation.
             - distances: np.ndarray, the Euclidean distances of each activation to its
-              corresponding cluster centroid.
+            corresponding cluster centroid.
+            - centroids: np.ndarray, coordinates of cluster centroids.
         """
         kmeans = KMeans(n_clusters=k, random_state=28)
         labels = kmeans.fit_predict(activations)
 
         distances = np.linalg.norm(activations - kmeans.cluster_centers_[labels], axis=1)
+        centroids = kmeans.cluster_centers_
 
-        return labels, distances
+        return labels, distances, centroids
 
     def cluster(
         self,
@@ -134,7 +136,7 @@ class KMeansClusterer:
                 desc=f"Clustering activations from layer {layer_i}",
             ) as pbar:
                 for k in range(2, max_k + 1):
-                    cluster_labels, centroid_distances = self._cluster_activations(
+                    cluster_labels, centroid_distances, centroids = self._cluster_activations(
                         activations=activations,
                         k=k,
                     )
@@ -144,6 +146,10 @@ class KMeansClusterer:
                     np.save(
                         f"{layer_save_directory_path}k_{k}_cluster_labels.npy",
                         cluster_labels,
+                    )
+                    np.save(
+                        f"{layer_save_directory_path}k_{k}_cluster_centroids.npy",
+                        centroids,
                     )
 
                     cluster_counts = Counter(cluster_labels)
