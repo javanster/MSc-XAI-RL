@@ -99,7 +99,7 @@ class ModelActivationObtainer:
         to `(batch_size, height * width * channels)`.
         """
         activation_model: Model = self._activation_models[layer_index]
-        inputs_normalized = self.input_normalization_callback(model_inputs)
+        inputs_normalized = self.input_normalization_callback(np.array(model_inputs))
         activations = activation_model.predict(inputs_normalized)
 
         # If the layer is a Conv2D layer, flatten the output
