@@ -1,7 +1,9 @@
+import random
 from typing import Set, Tuple
 
 import gymnasium as gym
 import numpy as np
+import tensorflow as tf
 from gymnasium import Env
 from keras.api.models import Sequential
 from sklearn.model_selection import train_test_split
@@ -11,8 +13,16 @@ from agents import ObservationNormalizationCallbacks
 
 
 def get_base_and_eval_dataset(
-    size: int, env: Env, model: Sequential, normalization_callback: str
+    size: int,
+    env: Env,
+    model: Sequential,
+    normalization_callback: str,
+    all_q: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    random.seed(28)
+    np.random.seed(28)
+    tf.random.set_seed(28)
+
     terminated, truncated = False, False
     X = []
     Y = []
@@ -48,17 +58,20 @@ def get_base_and_eval_dataset(
                     np.array(observation).reshape(-1, *observation.shape)
                 )
                 q_values = model.predict(observation_reshaped)[0]
-                y = int(np.argmax(q_values))
+                action = int(np.argmax(q_values))
 
                 X.append(observation)
-                Y.append(y)
+                if all_q:
+                    Y.append(q_values)
+                else:
+                    Y.append(action)
                 seen_hashes.add(obs_hash)
                 pbar.update(1)
 
-                observation, _, terminated, truncated, _ = env.step(y)
+                observation, _, terminated, truncated, _ = env.step(action)
 
     X_train, X_val, Y_train, Y_val = train_test_split(
-        X, Y, test_size=0.2, random_state=42, stratify=Y
+        X, Y, test_size=0.2, random_state=42, stratify=None if all_q else Y
     )
 
     return np.array(X_train), np.array(X_val), np.array(Y_train), np.array(Y_val)
