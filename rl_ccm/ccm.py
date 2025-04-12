@@ -98,7 +98,7 @@ class CCM(ABC):
         cavs: np.ndarray,
         conv_handling: str,
         layer_i: int,
-        use_sigmoid: bool,
+        use_sigmoid: List[bool] | None,
         biases: np.ndarray | None,
     ) -> List[np.ndarray]:
         """
@@ -107,24 +107,30 @@ class CCM(ABC):
         Parameters
         ----------
         model_inputs : np.ndarray
-            Input samples to the model.
+            Input data to be passed through the model.
         cavs : np.ndarray
-            Concept Activation Vectors. Shape (n_concepts, activation_dim).
+            Array of Concept Activation Vectors, one per concept.
         conv_handling : str
-            Strategy for processing convolutional activations: "flatten" or "dim_reduction".
+            Strategy for handling convolutional layer outputs ("flatten" or other).
         layer_i : int
             Index of the layer from which to extract activations.
-        use_sigmoid : bool
-            Whether to apply sigmoid to project concept scores into probabilities.
+        use_sigmoid : list of bool or None
+            List indicating whether to apply sigmoid and binary thresholding to the score of each concept.
+            If None, no sigmoid is applied.
         biases : np.ndarray or None
-            Optional bias vector added before applying sigmoid. Shape must match number of concepts.
+            Optional biases to add to the raw concept scores prior to sigmoid transformation.
+            Must be the same length as the number of concepts if specified.
 
         Returns
         -------
         List[np.ndarray]
-            Concept score vectors for each input sample. If `use_sigmoid` is True,
-            returns binary predictions (0 or 1); otherwise raw projection scores.
+            List of concept scores per input sample. If `use_sigmoid` is used, scores for selected
+            concepts are binarized based on sigmoid thresholding.
         """
+        if use_sigmoid != None and len(use_sigmoid) != len(cavs):
+            raise ValueError(
+                "use_sigmoid must be either None or have the same length as argument for cavs"
+            )
 
         if biases is not None and len(biases) != len(cavs):
             raise ValueError("Lenght of cavs and biases are not equal")
@@ -148,9 +154,12 @@ class CCM(ABC):
         if biases is not None:
             concept_scores = concept_scores + biases.reshape(1, -1)
 
-        if use_sigmoid:
-            probabilities = 1 / (1 + np.exp(-(concept_scores)))
-            concept_scores = (probabilities >= 0.5).astype(np.float32)
+        if use_sigmoid is not None:
+            for i, apply_sigmoid in enumerate(use_sigmoid):
+                if apply_sigmoid:
+                    scores = concept_scores[:, i]
+                    probabilities = 1 / (1 + np.exp(-scores))
+                    concept_scores[:, i] = (probabilities >= 0.5).astype(np.float32)
 
         return concept_scores
 
@@ -180,7 +189,7 @@ class CCM(ABC):
         cavs: np.ndarray,
         conv_handling: str,
         layer_i: int,
-        use_sigmoid: bool,
+        use_sigmoid: List[bool] | None,
         biases: np.ndarray | None,
     ) -> float:
         """
@@ -196,8 +205,8 @@ class CCM(ABC):
             Strategy for processing convolutional activations: "flatten" or "dim_reduction".
         layer_i : int
             Index of the model layer from which activations are extracted.
-        use_sigmoid : bool
-            Whether sigmoid was applied to concept scores before training.
+        use_sigmoid : list of bool or None
+            List indicating whether sigmoid was applied to each concept score before training.
         biases : np.ndarray or None
             Optional biases used during sigmoid activation.
 
@@ -232,7 +241,7 @@ class CCM(ABC):
         cavs: np.ndarray,
         conv_handling: str,
         layer_i: int,
-        use_sigmoid: bool = False,
+        use_sigmoid: List[bool] | None = None,
         biases: np.ndarray | None = None,
     ) -> Tuple[float, ConceptCompletenessModel]:
         """
@@ -246,8 +255,8 @@ class CCM(ABC):
             Strategy for handling convolutional activations: "flatten" or "dim_reduction".
         layer_i : int
             Layer index from which activations are extracted.
-        use_sigmoid : bool, optional
-            Whether to apply sigmoid transformation to concept scores. Default is False.
+        use_sigmoid : list of bool or None, optional
+            List indicating whether to apply sigmoid transformation to each concept score. Default is None.
         biases : np.ndarray or None, optional
             Biases for sigmoid transformation. Required if `use_sigmoid` is True.
 
