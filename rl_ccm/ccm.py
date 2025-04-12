@@ -149,7 +149,7 @@ class CCM(ABC):
             concept_scores = concept_scores + biases.reshape(1, -1)
 
         if use_sigmoid:
-            probabilities = 1 / (1 + np.exp(-(concept_scores + biases)))
+            probabilities = 1 / (1 + np.exp(-(concept_scores)))
             concept_scores = (probabilities >= 0.5).astype(np.float32)
 
         return concept_scores
