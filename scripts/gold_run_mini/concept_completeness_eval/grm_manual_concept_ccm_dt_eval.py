@@ -88,7 +88,7 @@ def eval_manual_concepts_ccm_dt(layer_i: int):
                 cavs=cavs,
                 conv_handling="flatten",
                 layer_i=layer_i,
-                use_sigmoid=True,
+                use_sigmoid=[True for _ in range(len(cavs))],  # All concepts are binary
                 biases=biases,
             )
 

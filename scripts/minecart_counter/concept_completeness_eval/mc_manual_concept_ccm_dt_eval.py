@@ -65,6 +65,7 @@ def eval_manual_concepts_ccm_dt(layer_i: int):
 
             cavs = []
             biases = []
+            use_sigmoid = []
 
             concept_probe_path = (
                 "rl_tcav_data/concept_probes/minecart_counter/completeness_testing/kind-cosmos-35/"
@@ -77,6 +78,12 @@ def eval_manual_concepts_ccm_dt(layer_i: int):
                     cavs.append(cav)
                     biases.append(bias)
 
+                    # Check for only continuous concept
+                    if filename.startswith("minecarts_n_"):
+                        use_sigmoid.append(False)
+                    else:
+                        use_sigmoid.append(True)
+
             cavs = np.array(cavs)
             biases = np.array([b.flatten() for b in biases])
 
@@ -88,7 +95,7 @@ def eval_manual_concepts_ccm_dt(layer_i: int):
                 cavs=cavs,
                 conv_handling="flatten",
                 layer_i=layer_i,
-                use_sigmoid=True,
+                use_sigmoid=use_sigmoid,
                 biases=biases,
             )
 
