@@ -85,7 +85,7 @@ def eval_manual_concepts_ccm_dt(layer_i: int):
                 cavs=cavs,
                 conv_handling="flatten",
                 layer_i=layer_i,
-                output_probability=True,
+                use_sigmoid=True,
                 biases=biases,
             )
 
