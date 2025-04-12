@@ -21,10 +21,8 @@ class CCM_NN(CCM):
 
     Parameters
     ----------
-    model : Sequential
-        The original model whose behavior is being explained.
     model_activation_obtainer : ModelActivationObtainer
-        Utility to extract intermediate layer activations from the model.
+        Utility to extract intermediate layer activations from the model to be explained.
     num_classes : int
         Number of output classes for classification tasks.
     X_train : np.ndarray
@@ -41,7 +39,6 @@ class CCM_NN(CCM):
 
     def __init__(
         self,
-        model: Sequential,
         model_activation_obtainer: ModelActivationObtainer,
         num_classes: int,
         X_train: np.ndarray,
@@ -51,7 +48,6 @@ class CCM_NN(CCM):
         all_q: bool = False,
     ) -> None:
         super().__init__(
-            model=model,
             model_activation_obtainer=model_activation_obtainer,
             num_classes=num_classes,
             X_train=X_train,
@@ -64,8 +60,6 @@ class CCM_NN(CCM):
     def _train_ccm_model(
         self,
         concept_scores: List[np.ndarray],
-        epochs: int = 100,
-        batch_size: int = 32,
     ) -> Sequential:
         """
         Train a neural network decoder on concept scores to predict model outputs.
@@ -74,10 +68,6 @@ class CCM_NN(CCM):
         ----------
         concept_scores : List[np.ndarray]
             List of concept score vectors for the training data.
-        epochs : int, optional
-            Number of training epochs. Default is 100.
-        batch_size : int, optional
-            Training batch size. Default is 32.
 
         Returns
         -------
@@ -106,8 +96,8 @@ class CCM_NN(CCM):
         model_nn.compile(optimizer=Adam(learning_rate=0.001), loss=loss)  # type: ignore
 
         if self.all_q:
-            model_nn.fit(X, self.Y_train, epochs=epochs, batch_size=batch_size)
+            model_nn.fit(X, self.Y_train, epochs=100, batch_size=32)
         else:
-            model_nn.fit(X, self.Y_train, epochs=epochs, batch_size=batch_size)
+            model_nn.fit(X, self.Y_train, epochs=100, batch_size=32)
 
         return model_nn

@@ -1,7 +1,9 @@
+import random
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Union
 
 import numpy as np
+import tensorflow as tf
 from keras.api.models import Sequential
 from sklearn.metrics import accuracy_score, r2_score
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
@@ -24,10 +26,8 @@ class CCM(ABC):
 
     Parameters
     ----------
-    model : Sequential
-        The Keras model being explained.
     model_activation_obtainer : ModelActivationObtainer
-        Object for extracting intermediate activations from the model.
+        Object for extracting intermediate activations from the model to be explained.
     num_classes : int
         Number of classes (used for classification mode).
     X_train : np.ndarray
@@ -44,7 +44,6 @@ class CCM(ABC):
 
     def __init__(
         self,
-        model: Sequential,
         model_activation_obtainer: ModelActivationObtainer,
         num_classes: int,
         X_train: np.ndarray,
@@ -53,13 +52,15 @@ class CCM(ABC):
         Y_val: np.ndarray,
         all_q: bool = False,
     ) -> None:
+        random.seed(28)
+        np.random.seed(28)
+        tf.random.set_seed(28)
 
         if all_q and np.ndim(Y_train) == 1:
             raise ValueError(
                 "Dims of Y_train suggests max Q instead of one Q-value for each action, make sure you have set the correct parameters."
             )
 
-        self.model = model
         self.mao = model_activation_obtainer
         self.num_classes = num_classes
         self.X_train = X_train

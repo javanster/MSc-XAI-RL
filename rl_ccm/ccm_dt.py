@@ -10,10 +10,34 @@ from .ccm import CCM
 
 
 class CCM_DT(CCM):
+    """
+    Concept Completeness Model using a Decision Tree decoder.
+
+    This subclass of CCM uses a decision tree (classifier or regressor)
+    to model the relationship between concept scores and model predictions.
+    It supports both classification (using action indices) and regression
+    (using Q-values) depending on the `all_q` flag.
+
+    Parameters
+    ----------
+    model_activation_obtainer : ModelActivationObtainer
+        Utility to extract intermediate layer activations from the model to be explained.
+    num_classes : int
+        Number of output classes for classification tasks.
+    X_train : np.ndarray
+        Training input data (observations).
+    X_val : np.ndarray
+        Validation input data (observations).
+    Y_train : np.ndarray
+        Training labels (action indices or Q-values).
+    Y_val : np.ndarray
+        Validation labels (action indices or Q-values).
+    all_q : bool, optional
+        If True, use regression to predict full Q-values; if False, use classification. Default is False.
+    """
 
     def __init__(
         self,
-        model: Sequential,
         model_activation_obtainer: ModelActivationObtainer,
         num_classes: int,
         X_train: np.ndarray,
@@ -23,7 +47,6 @@ class CCM_DT(CCM):
         all_q: bool = False,
     ) -> None:
         super().__init__(
-            model=model,
             model_activation_obtainer=model_activation_obtainer,
             num_classes=num_classes,
             X_train=X_train,
