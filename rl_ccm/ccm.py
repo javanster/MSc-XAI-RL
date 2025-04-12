@@ -1,4 +1,5 @@
-from typing import List
+from abc import ABC, abstractmethod
+from typing import List, Tuple, Union
 
 import numpy as np
 from keras.api.models import Sequential
@@ -7,23 +8,28 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 from utils import ModelActivationObtainer
 
+ConceptCompletenessModel = Union[DecisionTreeClassifier, DecisionTreeRegressor, Sequential]
 
-class CCM:
+
+class CCM(ABC):
     """
-    Concept Completeness Model (CCM) to evaluate how well a set of concepts can
-    explain the behavior of a neural network.
+    Abstract base class for Concept Completeness Models (CCM).
 
-    This implementation supports both classification (via predicted actions)
-    and multi-output regression (via Q-values).
+    This class provides a common interface for training and evaluating models that
+    assess the completeness of a set of concept activation vectors (CAVs) in
+    explaining the behavior of a neural network.
+
+    Subclasses must implement the `_train_ccm_model` method, which defines how
+    the concept-based model (e.g., decision tree, neural network) is trained.
 
     Parameters
     ----------
     model : Sequential
         The Keras model being explained.
     model_activation_obtainer : ModelActivationObtainer
-        Object for extracting model activations.
+        Object for extracting intermediate activations from the model.
     num_classes : int
-        Number of action classes (used for classification mode).
+        Number of classes (used for classification mode).
     X_train : np.ndarray
         Training input observations.
     X_val : np.ndarray
@@ -33,8 +39,7 @@ class CCM:
     Y_val : np.ndarray
         Validation targets.
     all_q : bool, optional
-        If True, evaluates multi-output regression using Q-values.
-        If False, evaluates classification based on discrete actions.
+        If True, evaluates regression (Q-values); otherwise classification.
     """
 
     def __init__(
@@ -63,31 +68,6 @@ class CCM:
         self.Y_val = Y_val
         self.all_q = all_q
 
-    def _adjusted_r2_score(self, Y_val: np.ndarray, Y_pred: np.ndarray, n_predictors: int):
-        """
-        Compute the adjusted R² score.
-
-        Parameters
-        ----------
-        Y_val : np.ndarray
-            Ground truth target values.
-        Y_pred : np.ndarray
-            Predicted target values from the model.
-        n_predictors : int
-            Number of predictor variables (e.g., concept dimensions).
-
-        Returns
-        -------
-        float
-            Adjusted R² score.
-        """
-        n_samples = Y_val.shape[0]
-        r2 = r2_score(Y_val, Y_pred)
-        if n_samples <= n_predictors + 1:
-            raise ValueError("Number of samples must be grater than CAVs")
-        adjusted_r2 = 1 - (1 - r2) * (n_samples - 1) / (n_samples - n_predictors - 1)
-        return adjusted_r2
-
     def _dim_reduce_conv_activations(self, activations: np.ndarray) -> np.ndarray:
         """
         Reduce convolutional activations using global average pooling, as done in ACE.
@@ -115,7 +95,7 @@ class CCM:
         layer_i: int,
     ) -> List[np.ndarray]:
         """
-        Project model activations onto concept vectors.
+        Project model activations onto concept vectors to compute concept scores.
 
         Parameters
         ----------
@@ -124,14 +104,14 @@ class CCM:
         cavs : np.ndarray
             Concept Activation Vectors (CAVs), shape: (n_concepts, activation_dim).
         conv_handling : str
-            Method for handling convolutional activations ("flatten" or "dim_reduction").
+            How to handle conv activations: "flatten" or "dim_reduction".
         layer_i : int
             Index of the model layer to extract activations from.
 
         Returns
         -------
         List[np.ndarray]
-            Concept scores for each input sample.
+            Concept score vectors for each input sample.
         """
         if conv_handling == "flatten":
             activations = self.mao.get_layer_activations(
@@ -150,76 +130,66 @@ class CCM:
 
         return concept_scores
 
+    @abstractmethod
     def _train_ccm_model(
         self,
         concept_scores: List[np.ndarray],
-    ) -> DecisionTreeClassifier | DecisionTreeRegressor:
+    ) -> ConceptCompletenessModel:
         """
-        Train a decision tree on concept scores to predict outputs.
+        Abstract method for training a model on concept scores.
 
         Parameters
         ----------
         concept_scores : List[np.ndarray]
-            Concept score representations of the training data.
+            List of concept score vectors for each training sample.
 
         Returns
         -------
-        DecisionTreeClassifier or DecisionTreeRegressor
-            Fitted decision tree model.
+        ConceptCompletenessModel
+            A trained model (e.g., decision tree, neural network) that maps concept scores to outputs.
         """
-        X = np.vstack(concept_scores)
-        if self.all_q:
-            clf = DecisionTreeRegressor(max_depth=5, random_state=28)
-        else:
-            clf = DecisionTreeClassifier(max_depth=5, random_state=28)
-        clf.fit(X, self.Y_train)
-
-        return clf
+        pass
 
     def _evaluate_ccm_model(
         self,
-        model: DecisionTreeClassifier | DecisionTreeRegressor,
+        ccm: ConceptCompletenessModel,
         cavs: np.ndarray,
         conv_handling: str,
         layer_i: int,
-        num_classes: int,
     ) -> float:
         """
-        Evaluate the completeness of a concept-based model on validation data.
+        Evaluate completeness on the validation set using a trained concept-based model.
 
         Parameters
         ----------
-        model : DecisionTreeClassifier or DecisionTreeRegressor
-            Trained concept model.
+        ccm : ConceptCompletenessModel
+            Trained model (classifier or regressor) for predicting from concept scores.
         cavs : np.ndarray
-            Concept Activation Vectors (CAVs).
+            Concept Activation Vectors.
         conv_handling : str
-            Method for handling convolutional activations.
+            How to handle conv activations: "flatten" or "dim_reduction".
         layer_i : int
-            Model layer index to extract activations from.
-        num_classes : int
-            Number of classes (used in classification mode).
+            Model layer index from which to extract activations.
 
         Returns
         -------
         float
-            Completeness score: normalized accuracy (classification) or adjusted R² (regression).
+            Completeness score:
+            - Normalized accuracy for classification,
+            - R² score for regression.
         """
         concept_scores = self._get_concept_scores(
             model_inputs=self.X_val, cavs=cavs, conv_handling=conv_handling, layer_i=layer_i
         )
 
-        preds = model.predict(concept_scores)
+        preds = ccm.predict(concept_scores)
 
         if self.all_q:
-            n_predictors = cavs.shape[0]  # number of concepts
-            completeness_score = float(
-                self._adjusted_r2_score(Y_val=self.Y_val, Y_pred=preds, n_predictors=n_predictors)
-            )
+            completeness_score = float(r2_score(self.Y_val, preds))
 
         else:
             acc = accuracy_score(self.Y_val, preds)
-            random_acc = 1 / num_classes
+            random_acc = 1 / self.num_classes
             completeness_score = float((acc - random_acc) / (1 - random_acc))
 
         return completeness_score
@@ -229,34 +199,34 @@ class CCM:
         cavs: np.ndarray,
         conv_handling: str,
         layer_i: int,
-    ) -> float:
+    ) -> Tuple[float, ConceptCompletenessModel]:
         """
-        Train and evaluate a concept-based decision tree model.
+        Train the concept model and evaluate its completeness on validation data.
 
         Parameters
         ----------
         cavs : np.ndarray
-            Concept Activation Vectors (CAVs).
+            Concept Activation Vectors.
         conv_handling : str
-            Either "flatten" or "dim_reduction" to control activation handling.
+            Either "flatten" or "dim_reduction" for activation handling.
         layer_i : int
-            Layer index for extracting activations.
+            Layer index from which to extract activations.
 
         Returns
         -------
-        float
-            Completeness score (classification: normalized accuracy, regression: adjusted R²).
+        Tuple[float, ConceptCompletenessModel]
+            - Completeness score,
+            - Trained model.
         """
         concept_scores = self._get_concept_scores(
             model_inputs=self.X_train, cavs=cavs, conv_handling=conv_handling, layer_i=layer_i
         )
-        classifier = self._train_ccm_model(concept_scores=concept_scores)
+        ccm = self._train_ccm_model(concept_scores=concept_scores)
         completeness_score = self._evaluate_ccm_model(
-            model=classifier,
+            ccm=ccm,
             cavs=cavs,
             conv_handling=conv_handling,
             layer_i=layer_i,
-            num_classes=self.num_classes,
         )
 
-        return completeness_score
+        return completeness_score, ccm
