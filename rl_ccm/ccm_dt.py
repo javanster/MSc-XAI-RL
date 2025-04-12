@@ -1,7 +1,6 @@
 from typing import List
 
 import numpy as np
-from keras.api.models import Sequential
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 from utils import ModelActivationObtainer
@@ -45,6 +44,7 @@ class CCM_DT(CCM):
         Y_train: np.ndarray,
         Y_val: np.ndarray,
         all_q: bool = False,
+        max_depth: int = 3,
     ) -> None:
         super().__init__(
             model_activation_obtainer=model_activation_obtainer,
@@ -54,6 +54,7 @@ class CCM_DT(CCM):
             Y_train=Y_train,
             Y_val=Y_val,
             all_q=all_q,
+            max_depth=max_depth,
         )
 
     def _train_ccm_model(
@@ -72,14 +73,19 @@ class CCM_DT(CCM):
         -------
         DecisionTreeClassifier or DecisionTreeRegressor
             Trained decision tree model:
-            - DecisionTreeClassifier if classification mode is used (all_q=False).
-            - DecisionTreeRegressor if regression mode is used (all_q=True).
+            - DecisionTreeClassifier if classification mode is used (`all_q=False`).
+            - DecisionTreeRegressor if regression mode is used (`all_q=True`).
         """
         X = np.vstack(concept_scores)
+
         if self.all_q:
-            clf = DecisionTreeRegressor(max_depth=3, random_state=28)
+            clf = DecisionTreeRegressor(
+                max_depth=self.max_depth, random_state=28, min_samples_leaf=5
+            )
         else:
-            clf = DecisionTreeClassifier(max_depth=3, random_state=28)
+            clf = DecisionTreeClassifier(
+                max_depth=self.max_depth, random_state=28, min_samples_leaf=5
+            )
         clf.fit(X, self.Y_train)
 
         return clf
