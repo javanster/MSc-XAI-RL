@@ -18,7 +18,7 @@ class CCM(ABC):
     Abstract base class for Concept Completeness Models (CCM).
 
     This class provides a common interface for training and evaluating models that
-    assess the completeness of a set of concept activation vectors (CAVs) in
+    assess the completeness of a set of Concept Activation Vectors (CAVs) in
     explaining the behavior of a neural network.
 
     Subclasses must implement the `_train_ccm_model` method, which defines how
@@ -39,7 +39,9 @@ class CCM(ABC):
     Y_val : np.ndarray
         Validation targets.
     all_q : bool, optional
-        If True, evaluates regression (Q-values); otherwise classification.
+        If True, evaluates regression (Q-values); otherwise classification. Defaults to False
+    max_depth : int, optional
+        The max depth of the classifier, regressor. Only appliccable when using the CCM_DT class. Defaults to 3.
     """
 
     def __init__(
@@ -51,6 +53,7 @@ class CCM(ABC):
         Y_train: np.ndarray,
         Y_val: np.ndarray,
         all_q: bool = False,
+        max_depth: int = 3,
     ) -> None:
         random.seed(28)
         np.random.seed(28)
@@ -68,6 +71,7 @@ class CCM(ABC):
         self.Y_train = Y_train
         self.Y_val = Y_val
         self.all_q = all_q
+        self.max_depth = max_depth
 
     def _dim_reduce_conv_activations(self, activations: np.ndarray) -> np.ndarray:
         """
@@ -94,26 +98,37 @@ class CCM(ABC):
         cavs: np.ndarray,
         conv_handling: str,
         layer_i: int,
+        use_sigmoid: bool,
+        biases: np.ndarray | None,
     ) -> List[np.ndarray]:
         """
-        Project model activations onto concept vectors to compute concept scores.
+        Compute concept scores by projecting model activations onto Concept Activation Vectors (CAVs).
 
         Parameters
         ----------
         model_inputs : np.ndarray
             Input samples to the model.
         cavs : np.ndarray
-            Concept Activation Vectors (CAVs), shape: (n_concepts, activation_dim).
+            Concept Activation Vectors. Shape (n_concepts, activation_dim).
         conv_handling : str
-            How to handle conv activations: "flatten" or "dim_reduction".
+            Strategy for processing convolutional activations: "flatten" or "dim_reduction".
         layer_i : int
-            Index of the model layer to extract activations from.
+            Index of the layer from which to extract activations.
+        use_sigmoid : bool
+            Whether to apply sigmoid to project concept scores into probabilities.
+        biases : np.ndarray or None
+            Optional bias vector added before applying sigmoid. Shape must match number of concepts.
 
         Returns
         -------
         List[np.ndarray]
-            Concept score vectors for each input sample.
+            Concept score vectors for each input sample. If `use_sigmoid` is True,
+            returns binary predictions (0 or 1); otherwise raw projection scores.
         """
+
+        if biases is not None and len(biases) != len(cavs):
+            raise ValueError("Lenght of cavs and biases are not equal")
+
         if conv_handling == "flatten":
             activations = self.mao.get_layer_activations(
                 layer_index=layer_i, model_inputs=model_inputs, flatten=True
@@ -127,7 +142,15 @@ class CCM(ABC):
         assert (
             activations.shape[1] == cavs_transposed.shape[0]
         ), f"Shape mismatch: activations {activations.shape}, cavs {cavs_transposed.shape}"
+
         concept_scores = np.dot(activations, cavs_transposed)
+
+        if biases is not None:
+            concept_scores = concept_scores + biases.reshape(1, -1)
+
+        if use_sigmoid:
+            probabilities = 1 / (1 + np.exp(-(concept_scores + biases)))
+            concept_scores = (probabilities >= 0.5).astype(np.float32)
 
         return concept_scores
 
@@ -157,30 +180,39 @@ class CCM(ABC):
         cavs: np.ndarray,
         conv_handling: str,
         layer_i: int,
+        use_sigmoid: bool,
+        biases: np.ndarray | None,
     ) -> float:
         """
-        Evaluate completeness on the validation set using a trained concept-based model.
+        Evaluate the trained concept-based model on validation data, and obtain completeness score.
 
         Parameters
         ----------
         ccm : ConceptCompletenessModel
-            Trained model (classifier or regressor) for predicting from concept scores.
+            Trained model used to predict outputs from concept scores.
         cavs : np.ndarray
             Concept Activation Vectors.
         conv_handling : str
-            How to handle conv activations: "flatten" or "dim_reduction".
+            Strategy for processing convolutional activations: "flatten" or "dim_reduction".
         layer_i : int
-            Model layer index from which to extract activations.
+            Index of the model layer from which activations are extracted.
+        use_sigmoid : bool
+            Whether sigmoid was applied to concept scores before training.
+        biases : np.ndarray or None
+            Optional biases used during sigmoid activation.
 
         Returns
         -------
         float
-            Completeness score:
-            - Normalized accuracy for classification,
-            - R² score for regression.
+            Normalized accuracy (classification) or R² score (regression).
         """
         concept_scores = self._get_concept_scores(
-            model_inputs=self.X_val, cavs=cavs, conv_handling=conv_handling, layer_i=layer_i
+            model_inputs=self.X_val,
+            cavs=cavs,
+            conv_handling=conv_handling,
+            layer_i=layer_i,
+            use_sigmoid=use_sigmoid,
+            biases=biases,
         )
 
         preds = ccm.predict(concept_scores)
@@ -200,27 +232,37 @@ class CCM(ABC):
         cavs: np.ndarray,
         conv_handling: str,
         layer_i: int,
+        use_sigmoid: bool = False,
+        biases: np.ndarray | None = None,
     ) -> Tuple[float, ConceptCompletenessModel]:
         """
-        Train the concept model and evaluate its completeness on validation data.
+        Train a concept model and evaluate its completeness on validation data.
 
         Parameters
         ----------
         cavs : np.ndarray
             Concept Activation Vectors.
         conv_handling : str
-            Either "flatten" or "dim_reduction" for activation handling.
+            Strategy for handling convolutional activations: "flatten" or "dim_reduction".
         layer_i : int
-            Layer index from which to extract activations.
+            Layer index from which activations are extracted.
+        use_sigmoid : bool, optional
+            Whether to apply sigmoid transformation to concept scores. Default is False.
+        biases : np.ndarray or None, optional
+            Biases for sigmoid transformation. Required if `use_sigmoid` is True.
 
         Returns
         -------
         Tuple[float, ConceptCompletenessModel]
-            - Completeness score,
-            - Trained model.
+            Tuple containing the completeness score and the trained concept model.
         """
         concept_scores = self._get_concept_scores(
-            model_inputs=self.X_train, cavs=cavs, conv_handling=conv_handling, layer_i=layer_i
+            model_inputs=self.X_train,
+            cavs=cavs,
+            conv_handling=conv_handling,
+            layer_i=layer_i,
+            use_sigmoid=use_sigmoid,
+            biases=biases,
         )
         ccm = self._train_ccm_model(concept_scores=concept_scores)
         completeness_score = self._evaluate_ccm_model(
@@ -228,6 +270,8 @@ class CCM(ABC):
             cavs=cavs,
             conv_handling=conv_handling,
             layer_i=layer_i,
+            use_sigmoid=use_sigmoid,
+            biases=biases,
         )
 
         return completeness_score, ccm
