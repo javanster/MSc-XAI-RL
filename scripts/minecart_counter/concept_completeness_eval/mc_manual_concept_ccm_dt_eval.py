@@ -122,12 +122,11 @@ def eval_manual_concepts_ccm_dt(layer_i: int):
 
             pbar.update(1)
 
-    # Save the concept names with their indices
     concept_names_path = f"{save_path}manual_concepts_used_names.csv"
-    concept_df = pd.DataFrame(
+    concept_names_df = pd.DataFrame(
         {"feature_index": list(range(len(used_concept_names))), "concept_name": used_concept_names}
     )
-    concept_df.to_csv(concept_names_path, index=False)
+    concept_names_df.to_csv(concept_names_path, index=False)
 
     df = pd.DataFrame(results)
     df.to_csv(f"{save_path}manual_concepts_completeness_scores.csv", index=False)
