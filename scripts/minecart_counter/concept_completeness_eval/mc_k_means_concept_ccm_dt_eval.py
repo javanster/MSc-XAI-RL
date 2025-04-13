@@ -30,6 +30,47 @@ def eval_k_means_concepts_ccm_dt(layer_i: int, k: int):
         "rl_ccm_data/obs_action_set/minecart_counter/kind-cosmos-35/X_val_2000_examples.npy"
     )
 
+    cavs = np.load(
+        f"rl_ace_data/concept_examples/k_means/minecart_counter/model_of_interest_target_class_balanced_observations/layer_{layer_i}/k_{k}_cluster_centroids.npy"
+    )
+
+    observations = np.load(
+        "rl_concept_discovery_data/class_datasets_model_of_interest/minecart_counter/target_class_balanced_30000_shuffled_examples.npy"
+    )
+    cluster_labels = np.load(
+        f"rl_ace_data/concept_examples/k_means/minecart_counter/model_of_interest_target_class_balanced_observations/layer_{layer_i}/k_{k}_cluster_labels.npy"
+    )
+    biases = []
+
+    for cav_idx, cav in enumerate(cavs):
+        mask_pos = cluster_labels == cav_idx
+        mask_neg = cluster_labels != cav_idx
+
+        observations_pos = observations[mask_pos]
+        observations_neg = observations[mask_neg]
+
+        if len(observations_neg) > len(observations_pos):
+            rng = np.random.default_rng(seed=28 + cav_idx)
+            indices = rng.choice(len(observations_neg), size=len(observations_pos), replace=False)
+            observations_neg = observations_neg[indices]
+
+        pos_activations = mao.get_layer_activations(
+            layer_index=layer_i, model_inputs=observations_pos, flatten=True
+        )
+        neg_activations = mao.get_layer_activations(
+            layer_index=layer_i, model_inputs=observations_neg, flatten=True
+        )
+
+        assert pos_activations.shape[1] == cav.shape[0], "Mismatch in activation and CAV dimensions"
+
+        pos_scores = pos_activations @ cav
+        neg_scores = neg_activations @ cav
+
+        bias = -0.5 * (np.mean(pos_scores) + np.mean(neg_scores))
+        biases.append(bias)
+
+    biases = np.array(biases)
+
     results = []
 
     save_path = f"{CCM_SCORES_DIR_PATH}/ccm_dt/"
@@ -59,50 +100,6 @@ def eval_k_means_concepts_ccm_dt(layer_i: int, k: int):
                 all_q=True if target_type == "all_q" else False,
                 max_depth=max_depth,
             )
-
-            cavs = np.load(
-                f"rl_ace_data/concept_examples/k_means/minecart_counter/model_of_interest_target_class_balanced_observations/layer_{layer_i}/k_{k}_cluster_centroids.npy"
-            )
-
-            observations = np.load(
-                "rl_concept_discovery_data/class_datasets_model_of_interest/minecart_counter/target_class_balanced_30000_shuffled_examples.npy"
-            )
-            cluster_labels = np.load(
-                f"rl_ace_data/concept_examples/k_means/minecart_counter/model_of_interest_target_class_balanced_observations/layer_{layer_i}/k_{k}_cluster_labels.npy"
-            )
-            biases = []
-            for cav_idx, cav in enumerate(cavs):
-                mask_pos = cluster_labels == cav_idx
-                mask_neg = cluster_labels != cav_idx
-
-                observations_pos = observations[mask_pos]
-                observations_neg = observations[mask_neg]
-
-                if len(observations_neg) > len(observations_pos):
-                    rng = np.random.default_rng(seed=28 + cav_idx)
-                    indices = rng.choice(
-                        len(observations_neg), size=len(observations_pos), replace=False
-                    )
-                    observations_neg = observations_neg[indices]
-
-                pos_activations = mao.get_layer_activations(
-                    layer_index=layer_i, model_inputs=observations_pos, flatten=True
-                )
-                neg_activations = mao.get_layer_activations(
-                    layer_index=layer_i, model_inputs=observations_neg, flatten=True
-                )
-
-                assert (
-                    pos_activations.shape[1] == cav.shape[0]
-                ), "Mismatch in activation and CAV dimensions"
-
-                pos_scores = pos_activations @ cav
-                neg_scores = neg_activations @ cav
-
-                bias = -0.5 * (np.mean(pos_scores) + np.mean(neg_scores))
-                biases.append(bias)
-
-            biases = np.array(biases)
 
             completeness_score, model = ccm.train_and_eval_ccm(
                 cavs=cavs,

@@ -1,5 +1,6 @@
 import itertools
 import os
+import re
 
 import gymnasium as gym
 import joblib
@@ -37,6 +38,41 @@ def eval_manual_concepts_ccm_dt(layer_i: int):
 
     ensure_directory_exists(directory_path=save_path)
 
+    cavs = []
+    biases = []
+    use_sigmoid = []
+    used_concept_names = []
+
+    concept_probe_path = (
+        "rl_tcav_data/concept_probes/minecart_counter/completeness_testing/kind-cosmos-35/"
+    )
+    for filename in sorted(os.listdir(concept_probe_path)):
+        if filename.endswith(f"_layer_{layer_i}_concept_probe.keras"):
+            concept_name_match = re.match(
+                r"(.+)_layer_{}_concept_probe\.keras".format(layer_i), filename
+            )
+            if concept_name_match:
+                concept_name = concept_name_match.group(1)
+                used_concept_names.append(concept_name)
+            else:
+                raise ValueError("No concept name match")
+
+            probe: Sequential = load_model(f"{concept_probe_path}{filename}")  # type: ignore
+            weights, bias = probe.layers[0].get_weights()
+            cav = weights.flatten()
+            cavs.append(cav)
+            biases.append(bias)
+
+            if filename.startswith("minecarts_n_"):
+                use_sigmoid.append(False)
+            else:
+                use_sigmoid.append(True)
+
+    cavs = np.array(cavs)
+    biases = np.array([b.flatten() for b in biases])
+
+    cav_n = len(cavs)
+
     target_types = ["max_q", "all_q"]
     max_depths = [3, 4, 5]
 
@@ -60,36 +96,6 @@ def eval_manual_concepts_ccm_dt(layer_i: int):
                 all_q=True if target_type == "all_q" else False,
                 max_depth=max_depth,
             )
-
-            cav_n = 0
-
-            cavs = []
-            biases = []
-            use_sigmoid = []
-
-            concept_probe_path = (
-                "rl_tcav_data/concept_probes/minecart_counter/completeness_testing/kind-cosmos-35/"
-            )
-            for filename in sorted(os.listdir(concept_probe_path)):
-                if filename.endswith(f"_layer_{layer_i}_concept_probe.keras"):
-                    probe: Sequential = load_model(f"{concept_probe_path}{filename}")  # type: ignore
-                    weights, bias = probe.layers[0].get_weights()
-                    cav = weights.flatten()
-                    cavs.append(cav)
-                    biases.append(bias)
-
-                    # Check for only continuous concept
-                    if filename.startswith("minecarts_n_"):
-                        use_sigmoid.append(False)
-                    else:
-                        use_sigmoid.append(True)
-
-            cavs = np.array(cavs)
-            biases = np.array([b.flatten() for b in biases])
-
-            if cav_n != 0 and len(cavs) != cav_n:
-                raise ValueError("Dissimilar number of cavs for all layers")
-            cav_n = len(cavs)
 
             completeness_score, model = ccm.train_and_eval_ccm(
                 cavs=cavs,
@@ -115,6 +121,13 @@ def eval_manual_concepts_ccm_dt(layer_i: int):
             )
 
             pbar.update(1)
+
+    # Save the concept names with their indices
+    concept_names_path = f"{save_path}manual_concepts_used_names.csv"
+    concept_df = pd.DataFrame(
+        {"feature_index": list(range(len(used_concept_names))), "concept_name": used_concept_names}
+    )
+    concept_df.to_csv(concept_names_path, index=False)
 
     df = pd.DataFrame(results)
     df.to_csv(f"{save_path}manual_concepts_completeness_scores.csv", index=False)
