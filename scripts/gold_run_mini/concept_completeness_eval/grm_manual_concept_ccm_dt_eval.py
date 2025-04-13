@@ -1,5 +1,6 @@
 import itertools
 import os
+import re
 
 import gold_run_mini
 import gymnasium as gym
@@ -31,6 +32,35 @@ def eval_manual_concepts_ccm_dt(layer_i: int):
         "rl_ccm_data/obs_action_set/gold_run_mini/firm-mountain-13/X_val_2000_examples.npy"
     )
 
+    cavs = []
+    biases = []
+    used_concept_names = []
+
+    concept_probe_path = (
+        "rl_tcav_data/concept_probes/gold_run_mini/completeness_testing/firm-mountain-13/"
+    )
+    for filename in sorted(os.listdir(concept_probe_path)):
+        if filename.endswith(f"_layer_{layer_i}_concept_probe.keras"):
+            concept_name_match = re.match(
+                r"(.+)_layer_{}_concept_probe\.keras".format(layer_i), filename
+            )
+            if concept_name_match:
+                concept_name = concept_name_match.group(1)
+                used_concept_names.append(concept_name)
+            else:
+                raise ValueError("No concept name match")
+
+            probe: Sequential = load_model(f"{concept_probe_path}{filename}")  # type: ignore
+            weights, bias = probe.layers[0].get_weights()
+            cav = weights.flatten()
+            cavs.append(cav)
+            biases.append(bias)
+
+    cavs = np.array(cavs)
+    biases = np.array([b.flatten() for b in biases])
+
+    cav_n = len(cavs)
+
     results = []
 
     save_path = f"{CCM_SCORES_DIR_PATH}/ccm_dt/"
@@ -61,29 +91,6 @@ def eval_manual_concepts_ccm_dt(layer_i: int):
                 max_depth=max_depth,
             )
 
-            cav_n = 0
-
-            cavs = []
-            biases = []
-
-            concept_probe_path = (
-                "rl_tcav_data/concept_probes/gold_run_mini/completeness_testing/firm-mountain-13/"
-            )
-            for filename in sorted(os.listdir(concept_probe_path)):
-                if filename.endswith(f"_layer_{layer_i}_concept_probe.keras"):
-                    probe: Sequential = load_model(f"{concept_probe_path}{filename}")  # type: ignore
-                    weights, bias = probe.layers[0].get_weights()
-                    cav = weights.flatten()
-                    cavs.append(cav)
-                    biases.append(bias)
-
-            cavs = np.array(cavs)
-            biases = np.array([b.flatten() for b in biases])
-
-            if cav_n != 0 and len(cavs) != cav_n:
-                raise ValueError("Dissimilar number of cavs for all layers")
-            cav_n = len(cavs)
-
             completeness_score, model = ccm.train_and_eval_ccm(
                 cavs=cavs,
                 conv_handling="flatten",
@@ -108,6 +115,12 @@ def eval_manual_concepts_ccm_dt(layer_i: int):
             )
 
             pbar.update(1)
+
+    concept_names_path = f"{save_path}manual_concepts_used_names.csv"
+    concept_names_df = pd.DataFrame(
+        {"feature_index": list(range(len(used_concept_names))), "concept_name": used_concept_names}
+    )
+    concept_names_df.to_csv(concept_names_path, index=False)
 
     df = pd.DataFrame(results)
     df.to_csv(f"{save_path}manual_concepts_completeness_scores.csv", index=False)
