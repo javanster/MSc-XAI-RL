@@ -133,6 +133,7 @@ wandb/
 models/
 rl_tcav_data/
 rl_ace_data/
+rl_ice_data/
 rl_concept_discovery_data/
 rl_ccm_data/
 scripts_idun/
