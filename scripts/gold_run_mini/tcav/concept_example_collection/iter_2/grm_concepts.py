@@ -1,3 +1,5 @@
+import random
+
 from gymnasium import Env
 
 from rl_tcav import BinaryConcept
@@ -206,6 +208,11 @@ def is_wall_directly_left(env: Env) -> bool:
     return agent.x == 1
 
 
+def random_binary(env: Env) -> bool:
+    _env_validation(env)
+    return random.random() > 0.5
+
+
 def get_grm_concepts():
     return [
         # Gold position concepts
@@ -307,6 +314,11 @@ def get_grm_concepts():
         BinaryConcept(
             name="wall_directly_left",
             observation_presence_callback=is_wall_directly_left,
+            environment_name=ENV_NAME,
+        ),
+        BinaryConcept(
+            name="random_binary",
+            observation_presence_callback=random_binary,
             environment_name=ENV_NAME,
         ),
     ]

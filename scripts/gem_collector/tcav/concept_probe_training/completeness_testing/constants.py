@@ -19,6 +19,7 @@ CONCEPT_NAMES = [
     "rock_1_above",
     "wall_left",
     "wall_right",
+    "random_binary",
 ]
 CONCEPT_PREFIXES = [
     "binary_concept_amethyst_above",
@@ -34,4 +35,5 @@ CONCEPT_PREFIXES = [
     "binary_concept_rock_1_above",
     "binary_concept_wall_left",
     "binary_concept_wall_right",
+    "binary_concept_random_binary",
 ]

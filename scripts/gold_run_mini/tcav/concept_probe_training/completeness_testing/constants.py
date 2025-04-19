@@ -26,6 +26,7 @@ CONCEPT_NAMES = [
     "wall_directly_right",
     "wall_directly_left",
     "wall_directly_down",
+    "random_binary",
 ]
 CONCEPT_PREFIXES = [
     "binary_concept_gold_above",
@@ -48,4 +49,5 @@ CONCEPT_PREFIXES = [
     "binary_concept_wall_directly_right",
     "binary_concept_wall_directly_left",
     "binary_concept_wall_directly_down",
+    "binary_concept_random_binary",
 ]

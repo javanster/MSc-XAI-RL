@@ -55,6 +55,8 @@ CONCEPT_NAMES = [
     "wall_1_down_left",
     "wall_1_left",
     "wall_1_up_left",
+    "random_binary",
+    "random_continuous",
 ]
 CONCEPT_PREFIXES = [
     "continuous_concept_minecarts_n",
@@ -106,4 +108,6 @@ CONCEPT_PREFIXES = [
     "binary_concept_wall_1_down_left",
     "binary_concept_wall_1_left",
     "binary_concept_wall_1_up_left",
+    "binary_concept_random_binary",
+    "continuous_concept_random_continuous",
 ]

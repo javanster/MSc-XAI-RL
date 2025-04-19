@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 from gymnasium import Env
 
@@ -101,15 +103,30 @@ def generate_goal_direction_binary_fns():
     return fns
 
 
+def random_continuous(env: Env) -> float:
+    _env_validation(env)
+    return random.uniform(0, 8)
+
+
 def get_mc_continuous_concepts():
     continuous_concepts = [
         ContinuousConcept(
             name="minecarts_n",
             observation_presence_callback=minecarts_n,
             environment_name=ENV_NAME,
-        )
+        ),
+        ContinuousConcept(
+            name="random_continuous",
+            observation_presence_callback=random_continuous,
+            environment_name=ENV_NAME,
+        ),
     ]
     return continuous_concepts
+
+
+def random_binary(env: Env) -> bool:
+    _env_validation(env)
+    return random.random() > 0.5
 
 
 def get_mc_binary_concepts():
@@ -141,5 +158,13 @@ def get_mc_binary_concepts():
                 environment_name=ENV_NAME,
             )
         )
+
+    binary_concepts.append(
+        BinaryConcept(
+            name="random_binary",
+            observation_presence_callback=random_binary,
+            environment_name=ENV_NAME,
+        ),
+    )
 
     return binary_concepts
