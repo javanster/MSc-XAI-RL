@@ -219,7 +219,7 @@ class GemCollector(Env):
             range(1, self.grid_side_length - 1), 2
         )
         if random.random() > 0.5:
-            lava_coordinate: int = random.randint(0, 1)
+            lava_coordinate: int = random.choice([0, self.grid_side_length - 1])
         else:
             lava_coordinate: int = random.randint(1, self.grid_side_length - 2)
             while (
