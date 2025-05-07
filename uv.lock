@@ -365,7 +365,7 @@ wheels = [
 
 [[package]]
 name = "gem-collector"
-version = "3.0.12"
+version = "3.0.14"
 source = { directory = "environments/gem_collector" }
 dependencies = [
     { name = "gymnasium" },

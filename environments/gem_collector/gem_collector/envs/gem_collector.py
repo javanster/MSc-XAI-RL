@@ -501,7 +501,7 @@ class GemCollector(Env):
             npc.is_moving_left = not npc.is_moving_left
             npc.obj_drop_x_coordinates = obj_x_coord_reset()
 
-    def _get_rewards_obj_collision(self) -> Tuple[float, bool]:
+    def _get_rewards_obj_collision(self) -> Tuple[float, bool, Dict[str, int | bool]]:
         """
         Checks for collisions between the agent and objects, updating rewards and termination status.
 
@@ -517,6 +517,16 @@ class GemCollector(Env):
             - A float representing the accumulated reward from object collisions.
             - A boolean indicating whether the episode should terminate due to a lava collision.
         """
+
+        info = {
+            "aquamarine_collected": 0,
+            "amethyst_collected": 0,
+            "emerald_collected": 0,
+            "rocks_collected": 0,
+            "lava_collision": False,
+            "reward": 0,
+        }
+
         reward: float = 0
         terminated = False
         for obj_type in self.obj_lists.keys():
@@ -524,15 +534,25 @@ class GemCollector(Env):
             for obj in obj_list[:]:
                 if obj == self.agent:
                     reward += self.rewards[obj_type]
-                    if obj_type == "rock":
+                    if obj_type == "aquamarine":
+                        info["aquamarine_collected"] = 1
+                    elif obj_type == "amethyst":
+                        info["amethyst_collected"] = 1
+                    elif obj_type == "emerald":
+                        info["emerald_collected"] = 1
+                    elif obj_type == "rock":
                         self.active_agent_sprite = 1
+                        info["rocks_collected"] = 1
                     elif obj_type == "lava":
+                        info["lava_collision"] = True
                         terminated = True
                         break
                     else:
                         self.active_agent_sprite = 2
                     obj_list.remove(obj)
-        return reward, terminated
+
+        info["reward"] = reward
+        return reward, terminated, info
 
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, bool, Dict[Any, Any]]:
         """
@@ -579,14 +599,13 @@ class GemCollector(Env):
             obj_x_coord_reset=self._reset_and_get_obj_drop_x_coordinates_for_npc_1,
         )
 
-        reward, terminated = self._get_rewards_obj_collision()
+        reward, terminated, info = self._get_rewards_obj_collision()
         truncated: bool = False
 
         if self.episode_step >= 190:  # max 10 complete rounds back and forth
             truncated = True
             terminated = True
 
-        info = {}
         self.episode_step += 1
         new_observation: np.ndarray = self._get_obs()
 
