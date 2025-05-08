@@ -21,6 +21,7 @@ if __name__ == "__main__":
         "exited_in_final_passage_count": 0,
         "exited_in_early_termination_passage_count": 0,
         "truncated_count": 0,
+        "total_reward": 0,
     }
 
     def step_callback(
@@ -39,6 +40,7 @@ if __name__ == "__main__":
             1 if info["exited_in_early_termination_passage"] else 0
         )
         log_vars["truncated_count"] += 1 if truncated else 0
+        log_vars["total_reward"] += reward
 
     env = gym.make(
         id="GoldRunMini-v1",
@@ -49,13 +51,15 @@ if __name__ == "__main__":
         only_second_room=False,
         lava_spots=8,
     )
-    input_shape = env.observation_space.shape
-    output_shape = env.action_space.n
+
+    EPISODES = 20
+
     agent = DDQNAgent(env=env, obervation_normalization_type="image")
     model = load_model(MODEL_OF_INTEREST_PATH)
     model = cast(Sequential, model)
     test_logger = TestLogger(log_vars=log_vars, step_callback=step_callback)
 
-    agent.test(env=env, episodes=20, model=model, test_logger=test_logger, epsilon=0.05)
+    agent.test(env=env, episodes=EPISODES, model=model, test_logger=test_logger, epsilon=0.05)
 
     print(log_vars)
+    print(f"Avg reward per episode: {log_vars['total_reward'] / EPISODES}")
