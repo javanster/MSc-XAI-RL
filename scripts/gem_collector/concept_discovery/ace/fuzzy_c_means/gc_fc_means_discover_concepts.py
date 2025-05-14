@@ -22,12 +22,7 @@ def fc_means_cluster(class_observations: np.ndarray, save_directory_path: str) -
 
 
 if __name__ == "__main__":
-    target_classes = [
-        "balanced",
-        "left",
-        "right",
-        "do_nothing",
-    ]
+    target_classes = ["balanced"]
 
     for target_class in target_classes:
         class_observations = np.load(
@@ -36,5 +31,5 @@ if __name__ == "__main__":
 
         fc_means_cluster(
             class_observations=class_observations,
-            save_directory_path=f"rl_ace_data/concept_examples/fuzzy_c_means/gem_collector/model_of_interest_target_class_{target_class}_observations/",
+            save_directory_path=f"rl_ace_data/concept_examples/fuzzy_c_means/gem_collector/model_of_interest_target_class_{target_class}_observations_CONV_FLATTENED/",
         )
