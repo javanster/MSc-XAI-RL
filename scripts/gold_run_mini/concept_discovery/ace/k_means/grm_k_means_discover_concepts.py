@@ -22,13 +22,9 @@ def k_means_cluster(class_observations: np.ndarray, save_directory_path: str) ->
 
 
 if __name__ == "__main__":
-    target_classes = ["balanced", "up", "right", "down", "left"]
+    target_classes = ["balanced"]
     class_obs_paths = [
         "rl_concept_discovery_data/class_datasets_model_of_interest/gold_run_mini/target_class_balanced_6900_shuffled_examples.npy",
-        "rl_concept_discovery_data/class_datasets_model_of_interest/gold_run_mini/target_class_up_1725_shuffled_examples.npy",
-        "rl_concept_discovery_data/class_datasets_model_of_interest/gold_run_mini/target_class_right_1857_shuffled_examples.npy",
-        "rl_concept_discovery_data/class_datasets_model_of_interest/gold_run_mini/target_class_down_1872_shuffled_examples.npy",
-        "rl_concept_discovery_data/class_datasets_model_of_interest/gold_run_mini/target_class_left_1818_shuffled_examples.npy",
     ]
 
     for target_class, class_obs_path in zip(target_classes, class_obs_paths):
@@ -36,5 +32,5 @@ if __name__ == "__main__":
 
         k_means_cluster(
             class_observations=class_observations,
-            save_directory_path=f"rl_ace_data/concept_examples/k_means/gold_run_mini/model_of_interest_target_class_{target_class}_observations/",
+            save_directory_path=f"rl_ace_data/concept_examples/k_means/gold_run_mini/model_of_interest_target_class_{target_class}_observations_CONV_FLATTENED/",
         )

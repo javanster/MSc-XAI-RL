@@ -20,7 +20,7 @@ if __name__ == "__main__":
     n_concepts_values = [c for c in range(2, 51)]
     save_dir_path = f"rl_ice_data/ncavs/minecart_counter/model_of_interest_target_class_balanced_observations/layer_{last_cnn_layer_idx}/"
 
-    model: Sequential = load_model("models/MinecartCounter/scattered/kind-cosmos-35/1740021317_model____0.5122avg____0.9750max___-0.0900min.keras")  # type: ignore
+    model: Sequential = load_model("models/MinecartCounter/kind-cosmos-35/1740021317_model____0.5122avg____0.9750max___-0.0900min.keras")  # type: ignore
 
     env_observations = np.load(
         "rl_concept_discovery_data/class_datasets_model_of_interest/minecart_counter/target_class_balanced_30000_shuffled_examples.npy"
