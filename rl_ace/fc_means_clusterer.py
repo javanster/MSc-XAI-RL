@@ -65,7 +65,7 @@ class FCMeansClusterer:
             error=0.005,
             maxiter=1000,
             init=None,
-            seed=28,
+            seed=None,
         )
         fuzzy_memberships = u.T
         hard_labels = np.argmax(u, axis=0)
@@ -88,10 +88,8 @@ class FCMeansClusterer:
             ensure_directory_exists(layer_save_directory_path)
 
             activations = self.model_activation_obtainer.get_layer_activations(
-                layer_index=layer_i, model_inputs=environment_observations, flatten=False
+                layer_index=layer_i, model_inputs=environment_observations, flatten=True
             )
-
-            activations = self._reduce_conv_activations(activations)
 
             with tqdm(
                 initial=2,

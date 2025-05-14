@@ -73,7 +73,7 @@ class KMeansClusterer:
             corresponding cluster centroid.
             - centroids: np.ndarray, coordinates of cluster centroids.
         """
-        kmeans = KMeans(n_clusters=k, random_state=28)
+        kmeans = KMeans(n_clusters=k, random_state=None)
         labels = kmeans.fit_predict(activations)
 
         distances = np.linalg.norm(activations - kmeans.cluster_centers_[labels], axis=1)
@@ -124,10 +124,8 @@ class KMeansClusterer:
             ensure_directory_exists(layer_save_directory_path)
 
             activations = self.model_activation_obtainer.get_layer_activations(
-                layer_index=layer_i, model_inputs=environment_observations, flatten=False
+                layer_index=layer_i, model_inputs=environment_observations, flatten=True
             )
-
-            activations = self._reduce_conv_activations(activations)
 
             with tqdm(
                 initial=2,
