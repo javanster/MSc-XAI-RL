@@ -1,4 +1,3 @@
-import json
 import os
 import pickle
 from typing import List
@@ -89,7 +88,7 @@ class ICE:
                 nmf_model = NMF(
                     n_components=n_concepts,
                     init="random",
-                    random_state=28,
+                    random_state=None,
                     verbose=1,
                     max_iter=500,
                 )
