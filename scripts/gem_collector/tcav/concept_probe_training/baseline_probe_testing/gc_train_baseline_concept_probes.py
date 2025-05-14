@@ -9,8 +9,8 @@ from keras.api.models import Sequential
 from keras.api.saving import load_model
 from tqdm import tqdm
 
-from rl_tcav import BaselineBinaryConceptProbe, BinaryConcept, ModelActivationObtainer
-from utils import ensure_directory_exists
+from rl_tcav import BaselineBinaryConceptProbe, BinaryConcept
+from utils import ModelActivationObtainer, ensure_directory_exists
 
 from ...constants import MODEL_OF_INTEREST_NAME, MODEL_OF_INTEREST_PATH
 from .constants import (
