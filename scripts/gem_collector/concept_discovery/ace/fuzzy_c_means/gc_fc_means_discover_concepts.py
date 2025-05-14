@@ -31,5 +31,5 @@ if __name__ == "__main__":
 
         fc_means_cluster(
             class_observations=class_observations,
-            save_directory_path=f"rl_ace_data/concept_examples/fuzzy_c_means/gem_collector/model_of_interest_target_class_{target_class}_observations_CONV_FLATTENED/",
+            save_directory_path=f"rl_ace_data/concept_examples/fuzzy_c_means/gem_collector/model_of_interest_target_class_{target_class}_observations/",
         )
