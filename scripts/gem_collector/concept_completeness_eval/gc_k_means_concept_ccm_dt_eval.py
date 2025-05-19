@@ -15,35 +15,40 @@ from utils import ModelActivationObtainer, ensure_directory_exists
 from .constants import CCM_SCORES_DIR_PATH, MODEL_OF_INTEREST_PATH
 
 
-def eval_k_means_concepts_ccm_dt(layer_i: int, k: int):
+def eval_k_means_concepts_ccm_dt():
     model: Sequential = load_model(MODEL_OF_INTEREST_PATH)  # type: ignore
     env = gym.make(id="GemCollector-v3")
     mao = ModelActivationObtainer(model=model, input_normalization_type="image")
 
-    X_train = np.load(
-        "rl_ccm_data/obs_action_set/gem_collector/denim-sweep-56/X_train_8000_examples.npy"
-    )
-    X_val = np.load(
-        "rl_ccm_data/obs_action_set/gem_collector/denim-sweep-56/X_val_2000_examples.npy"
-    )
-
     results = []
+    best_completeness_score = -np.inf
+    best_dt_model = None
+    best_params = {}
 
     save_path = f"{CCM_SCORES_DIR_PATH}/ccm_dt/"
 
     ensure_directory_exists(directory_path=save_path)
 
-    target_types = ["max_q", "all_q"]
-    max_depths = [3, 4, 5]
+    batches = [b for b in range(100)]
+    layers = [0, 1, 3, 4, 5]
+    k_values = [k for k in range(2, 51)]
 
-    with tqdm(total=len(target_types) * len(max_depths), unit="score") as pbar:
-        for target_type, max_depth in itertools.product(target_types, max_depths):
+    with tqdm(total=len(batches) * len(layers) * len(k_values), unit="score") as pbar:
+        for batch, layer_i, k in itertools.product(batches, layers, k_values):
+
+            X_train = np.load(
+                f"/Volumes/work/rl_ccm_data/obs_action_set/gem_collector/denim-sweep-56/batch_{batch}/X_train_8000_examples.npy"
+            )
+
+            X_val = np.load(
+                f"/Volumes/work/rl_ccm_data/obs_action_set/gem_collector/denim-sweep-56/batch_{batch}/X_val_2000_examples.npy"
+            )
 
             Y_train = np.load(
-                f"rl_ccm_data/obs_action_set/gem_collector/denim-sweep-56/Y_{target_type}_train_8000_examples.npy"
+                f"/Volumes/work/rl_ccm_data/obs_action_set/gem_collector/denim-sweep-56/batch_{batch}/Y_all_q_train_8000_examples.npy"
             )
             Y_val = np.load(
-                f"rl_ccm_data/obs_action_set/gem_collector/denim-sweep-56/Y_{target_type}_val_2000_examples.npy"
+                f"/Volumes/work/rl_ccm_data/obs_action_set/gem_collector/denim-sweep-56/batch_{batch}/Y_all_q_val_2000_examples.npy"
             )
 
             ccm = CCM_DT(
@@ -53,19 +58,20 @@ def eval_k_means_concepts_ccm_dt(layer_i: int, k: int):
                 X_val=X_val,
                 Y_train=Y_train,
                 Y_val=Y_val,
-                all_q=True if target_type == "all_q" else False,
-                max_depth=max_depth,
+                all_q=True,
+                max_depth=3,
             )
 
             cavs = np.load(
-                f"rl_ace_data/concept_examples/k_means/gem_collector/model_of_interest_target_class_balanced_observations/layer_{layer_i}/k_{k}_cluster_centroids.npy"
+                f"/Volumes/work/rl_ace_data/concept_examples/k_means/gem_collector/model_of_interest_target_class_balanced_observations/batch_{batch}/layer_{layer_i}/k_{k}_cluster_centroids.npy"
             )
 
             observations = np.load(
                 "rl_concept_discovery_data/class_datasets_model_of_interest/gem_collector/target_class_balanced_30000_shuffled_examples.npy"
             )
+
             cluster_labels = np.load(
-                f"rl_ace_data/concept_examples/k_means/gem_collector/model_of_interest_target_class_balanced_observations/layer_{layer_i}/k_{k}_cluster_labels.npy"
+                f"/Volumes/work/rl_ace_data/concept_examples/k_means/gem_collector/model_of_interest_target_class_balanced_observations/batch_{batch}/layer_{layer_i}/k_{k}_cluster_labels.npy"
             )
             biases = []
             for cav_idx, cav in enumerate(cavs):
@@ -101,9 +107,9 @@ def eval_k_means_concepts_ccm_dt(layer_i: int, k: int):
 
             biases = np.array(biases)
 
-            completeness_score, model = ccm.train_and_eval_ccm(
+            completeness_score, dt_model = ccm.train_and_eval_ccm(
                 cavs=cavs,
-                conv_handling="dim_reduction",
+                conv_handling="flatten",
                 layer_i=layer_i,
                 use_sigmoid=[True for _ in range(len(cavs))],  # All concepts are binary
                 biases=biases,
@@ -111,24 +117,35 @@ def eval_k_means_concepts_ccm_dt(layer_i: int, k: int):
 
             results.append(
                 {
+                    "batch": batch,
                     "layer": layer_i,
                     "k": k,
-                    "target_type": target_type,
-                    "max_depth": max_depth,
+                    "target_type": "all_q",
+                    "max_depth": 3,
                     "completeness_score": completeness_score,
                 }
             )
 
-            joblib.dump(
-                model,
-                f"{save_path}best_ccm_k_means_layer_{layer_i}_k_{k}_{target_type}_max_depth_{max_depth}.joblib",
-            )
+            if completeness_score > best_completeness_score:
+                best_completeness_score = completeness_score
+                best_dt_model = dt_model
+                best_params = {"layer_i": layer_i, "k": k, "batch": batch}
 
             pbar.update(1)
+
+    joblib.dump(
+        best_dt_model,
+        f"{save_path}best_ccm_k_means_layer_{best_params['layer_i']}_k_{best_params['k']}_batch_{best_params['batch']}_all_q_max_depth_3.joblib",
+    )
+
+    print(
+        f"→ Best completeness={best_completeness_score:.4f} "
+        f"(batch={best_params['batch']}, layer={best_params['layer_i']}, k={best_params['k']})"
+    )
 
     df = pd.DataFrame(results)
     df.to_csv(f"{save_path}k_means_concepts_completeness_scores.csv", index=False)
 
 
 if __name__ == "__main__":
-    eval_k_means_concepts_ccm_dt(layer_i=5, k=32)  # Based on best layer of nn ccm
+    eval_k_means_concepts_ccm_dt()
