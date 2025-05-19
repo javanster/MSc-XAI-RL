@@ -28,7 +28,7 @@ def eval_manual_concepts_ccm_dt():
         "rl_ccm_data/obs_action_set/gem_collector/denim-sweep-56/X_val_2000_examples.npy"
     )
 
-    save_path = f"{CCM_SCORES_DIR_PATH}/ccm_dt/"
+    save_path = f"{CCM_SCORES_DIR_PATH}ccm_dt/"
     ensure_directory_exists(directory_path=save_path)
 
     layers = [0, 1, 3, 4, 5]

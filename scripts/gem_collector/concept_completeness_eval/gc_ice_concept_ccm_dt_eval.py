@@ -21,7 +21,7 @@ def eval_ice_concepts_ccm_dt():
     env = gym.make(id="GemCollector-v3")
     mao = ModelActivationObtainer(model=model, input_normalization_type="image")
 
-    save_path = f"{CCM_SCORES_DIR_PATH}/ccm_dt/"
+    save_path = f"{CCM_SCORES_DIR_PATH}ccm_dt/"
     ensure_directory_exists(directory_path=save_path)
 
     batches = list(range(100))

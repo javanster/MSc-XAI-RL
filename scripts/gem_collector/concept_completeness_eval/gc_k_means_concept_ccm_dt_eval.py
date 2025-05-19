@@ -25,7 +25,7 @@ def eval_k_means_concepts_ccm_dt():
     best_dt_model = None
     best_params = {}
 
-    save_path = f"{CCM_SCORES_DIR_PATH}/ccm_dt/"
+    save_path = f"{CCM_SCORES_DIR_PATH}ccm_dt/"
 
     ensure_directory_exists(directory_path=save_path)
 
