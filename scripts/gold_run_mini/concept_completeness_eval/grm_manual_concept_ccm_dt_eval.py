@@ -1,4 +1,3 @@
-import itertools
 import os
 import re
 
@@ -17,7 +16,7 @@ from utils import ModelActivationObtainer, ensure_directory_exists
 from .constants import CCM_SCORES_DIR_PATH, ENV_LAVA_SPOTS, MODEL_OF_INTEREST_PATH
 
 
-def eval_manual_concepts_ccm_dt(layer_i: int):
+def eval_manual_concepts_ccm_dt():
     model: Sequential = load_model(MODEL_OF_INTEREST_PATH)  # type: ignore
     env = gym.make(
         id="GoldRunMini-v1",
@@ -32,52 +31,51 @@ def eval_manual_concepts_ccm_dt(layer_i: int):
         "rl_ccm_data/obs_action_set/gold_run_mini/firm-mountain-13/X_val_2000_examples.npy"
     )
 
-    cavs = []
-    biases = []
-    used_concept_names = []
-
-    concept_probe_path = (
-        "rl_tcav_data/concept_probes/gold_run_mini/completeness_testing/firm-mountain-13/"
-    )
-    for filename in sorted(os.listdir(concept_probe_path)):
-        if filename.endswith(f"_layer_{layer_i}_concept_probe.keras"):
-            concept_name_match = re.match(
-                r"(.+)_layer_{}_concept_probe\.keras".format(layer_i), filename
-            )
-            if concept_name_match:
-                concept_name = concept_name_match.group(1)
-                used_concept_names.append(concept_name)
-            else:
-                raise ValueError("No concept name match")
-
-            probe: Sequential = load_model(f"{concept_probe_path}{filename}")  # type: ignore
-            weights, bias = probe.layers[0].get_weights()
-            cav = weights.flatten()
-            cavs.append(cav)
-            biases.append(bias)
-
-    cavs = np.array(cavs)
-    biases = np.array([b.flatten() for b in biases])
-
-    cav_n = len(cavs)
-
-    results = []
-
-    save_path = f"{CCM_SCORES_DIR_PATH}/ccm_dt/"
-
+    save_path = f"{CCM_SCORES_DIR_PATH}ccm_dt/"
     ensure_directory_exists(directory_path=save_path)
 
-    target_types = ["max_q", "all_q"]
-    max_depths = [3, 4, 5]
+    layers = [0, 1, 3, 4, 5]
 
-    with tqdm(total=len(target_types) * len(max_depths), unit="score") as pbar:
-        for target_type, max_depth in itertools.product(target_types, max_depths):
+    results = []
+    best_completeness_score = -np.inf
+    best_dt_model = None
+    best_params = {}
+    best_cav_n = 0
+    best_used_concept_names: list[str] = []
+
+    with tqdm(total=len(layers), unit="layer") as pbar:
+        for layer_i in layers:
+            cavs = []
+            biases = []
+            used_concept_names: list[str] = []
+
+            concept_probe_path = (
+                "rl_tcav_data/concept_probes/gold_run_mini/completeness_testing/firm-mountain-13/"
+            )
+            for filename in sorted(os.listdir(concept_probe_path)):
+                if not filename.endswith(f"_layer_{layer_i}_concept_probe.keras"):
+                    continue
+                m = re.match(r"(.+)_layer_{}_concept_probe\.keras".format(layer_i), filename)
+                if not m:
+                    raise ValueError(f"Cannot parse concept name from {filename}")
+                used_concept_names.append(m.group(1))
+
+                probe: Sequential = load_model(os.path.join(concept_probe_path, filename))  # type: ignore
+                w, b = probe.layers[0].get_weights()
+                cavs.append(w.flatten())
+                biases.append(b.flatten()[0])
+
+            cavs = np.array(cavs)
+            biases = np.array(biases)
+            cav_n = len(cavs)
 
             Y_train = np.load(
-                f"rl_ccm_data/obs_action_set/gold_run_mini/firm-mountain-13/Y_{target_type}_train_8000_examples.npy"
+                "rl_ccm_data/obs_action_set/gold_run_mini/firm-mountain-13/"
+                "Y_all_q_train_8000_examples.npy"
             )
             Y_val = np.load(
-                f"rl_ccm_data/obs_action_set/gold_run_mini/firm-mountain-13/Y_{target_type}_val_2000_examples.npy"
+                "rl_ccm_data/obs_action_set/gold_run_mini/firm-mountain-13/"
+                "Y_all_q_val_2000_examples.npy"
             )
 
             ccm = CCM_DT(
@@ -87,15 +85,15 @@ def eval_manual_concepts_ccm_dt(layer_i: int):
                 X_val=X_val,
                 Y_train=Y_train,
                 Y_val=Y_val,
-                all_q=True if target_type == "all_q" else False,
-                max_depth=max_depth,
+                all_q=True,
+                max_depth=3,
             )
 
-            completeness_score, model = ccm.train_and_eval_ccm(
+            completeness_score, dt_model = ccm.train_and_eval_ccm(
                 cavs=cavs,
                 conv_handling="flatten",
                 layer_i=layer_i,
-                use_sigmoid=[True for _ in range(len(cavs))],  # All concepts are binary
+                use_sigmoid=[True] * cav_n,
                 biases=biases,
             )
 
@@ -103,28 +101,41 @@ def eval_manual_concepts_ccm_dt(layer_i: int):
                 {
                     "layer": layer_i,
                     "c": cav_n,
-                    "target_type": target_type,
-                    "max_depth": max_depth,
+                    "target_type": "all_q",
+                    "max_depth": 3,
                     "completeness_score": completeness_score,
                 }
             )
 
-            joblib.dump(
-                model,
-                f"{save_path}best_ccm_manual_layer_{layer_i}_c_{cav_n}_{target_type}_max_depth_{max_depth}.joblib",
-            )
+            if completeness_score > best_completeness_score:
+                best_completeness_score = completeness_score
+                best_dt_model = dt_model
+                best_params = {"layer_i": layer_i}
+                best_cav_n = cav_n
+                best_used_concept_names = used_concept_names.copy()
 
             pbar.update(1)
 
-    concept_names_path = f"{save_path}manual_concepts_used_names.csv"
-    concept_names_df = pd.DataFrame(
-        {"feature_index": list(range(len(used_concept_names))), "concept_name": used_concept_names}
+    joblib.dump(
+        best_dt_model,
+        os.path.join(
+            save_path,
+            f"best_ccm_manual_layer_{best_params['layer_i']}"
+            f"_c_{best_cav_n}_all_q_max_depth_3.joblib",
+        ),
     )
-    concept_names_df.to_csv(concept_names_path, index=False)
 
-    df = pd.DataFrame(results)
-    df.to_csv(f"{save_path}manual_concepts_completeness_scores.csv", index=False)
+    pd.DataFrame(
+        {
+            "feature_index": list(range(len(best_used_concept_names))),
+            "concept_name": best_used_concept_names,
+        }
+    ).to_csv(os.path.join(save_path, "manual_concepts_used_names_best_layer.csv"), index=False)
+
+    pd.DataFrame(results).to_csv(
+        os.path.join(save_path, "manual_concepts_completeness_scores.csv"), index=False
+    )
 
 
 if __name__ == "__main__":
-    eval_manual_concepts_ccm_dt(layer_i=5)  # Based on best layer of nn ccm
+    eval_manual_concepts_ccm_dt()
