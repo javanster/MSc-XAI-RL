@@ -132,6 +132,7 @@ venv.bak/
 wandb/
 models/
 cav_alignment_data/
+cav_novelty_data/
 rl_tcav_data/
 rl_ace_data/
 rl_ice_data/
