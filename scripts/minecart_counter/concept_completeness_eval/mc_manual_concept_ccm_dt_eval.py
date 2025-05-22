@@ -1,5 +1,4 @@
 import os
-import re
 
 import gymnasium as gym
 import joblib
@@ -15,124 +14,238 @@ from utils import ModelActivationObtainer, ensure_directory_exists
 
 from .constants import CCM_SCORES_DIR_PATH, MODEL_OF_INTEREST_PATH
 
+# map env_name → (misaligned‐model folder, grid side H)
+MISALIGNED = {
+    "gem_collector": ("denim-sweep-56", 20),
+    "minecart_counter": ("kind-cosmos-35", 15),
+    "gold_run_mini": ("firm-mountain-13", 11),
+}
+
+
+def get_manual_cavs_and_names(
+    manual_concept_probe_path: str,
+    layer_i: int,
+    environment_name: str,
+    score_threshold: float = 0.5,
+):
+    model_name, _ = MISALIGNED[environment_name]
+    scores_csv = os.path.join(
+        "rl_tcav_data/concept_probes",
+        environment_name,
+        "completeness_testing",
+        model_name,
+        "concept_probe_scores.csv",
+    )
+    df = pd.read_csv(scores_csv)
+    valid = set(
+        df.query("layer_index == @layer_i and concept_probe_score >= @score_threshold")[
+            "concept_name"
+        ]
+    )
+
+    cavs, names = [], []
+    for fn in sorted(os.listdir(manual_concept_probe_path)):
+        if not fn.endswith(f"_layer_{layer_i}_concept_probe.keras"):
+            continue
+        name = fn[: fn.rfind(f"_layer_{layer_i}_concept_probe.keras")]
+        if name not in valid:
+            continue
+        m: Sequential = load_model(os.path.join(manual_concept_probe_path, fn))  # type: ignore
+        w, _ = m.layers[0].get_weights()
+        cavs.append(w.flatten())
+        names.append(name)
+
+    if not cavs:
+        raise RuntimeError(f"No manual CAVs found for {environment_name} layer {layer_i}")
+    return np.stack(cavs), names
+
 
 def eval_manual_concepts_ccm_dt():
     model: Sequential = load_model(MODEL_OF_INTEREST_PATH)  # type: ignore
     env = gym.make(id="MinecartCounter-v2", scatter_minecarts=True)
     mao = ModelActivationObtainer(model=model, input_normalization_type="image")
 
-    X_train = np.load(
-        "rl_ccm_data/obs_action_set/minecart_counter/kind-cosmos-35/X_train_8000_examples.npy"
-    )
-    X_val = np.load(
-        "rl_ccm_data/obs_action_set/minecart_counter/kind-cosmos-35/X_val_2000_examples.npy"
-    )
+    # Prepare data paths
+    model_name, _ = MISALIGNED["minecart_counter"]
+    base_obs_path = os.path.join("rl_ccm_data/obs_action_set/minecart_counter", model_name)
+    X_train = np.load(os.path.join(base_obs_path, "X_train_8000_examples.npy"))
+    X_val = np.load(os.path.join(base_obs_path, "X_val_2000_examples.npy"))
 
-    save_path = f"{CCM_SCORES_DIR_PATH}/ccm_dt/"
+    save_path = os.path.join(CCM_SCORES_DIR_PATH, "ccm_dt") + os.sep
     ensure_directory_exists(directory_path=save_path)
 
     layers = [0, 1, 3, 4, 5]
-    results: list[dict] = []
-    best_score = -np.inf
-    best_model = None
-    best_params: dict = {}
-    best_cav_n = 0
-    best_used_names: list[str] = []
+
+    # Track best models across layers for both sets
+    best_all_score = -np.inf
+    best_all_model = None
+    best_all_params = {}
+    best_all_names: list[str] = []
+
+    best_filt_score = -np.inf
+    best_filt_model = None
+    best_filt_params = {}
+    best_filt_names: list[str] = []
+
+    results_all = []
+    results_filtered = []
+
+    # Base path for manual concept probes
+    concept_probe_base = os.path.join(
+        "rl_tcav_data", "concept_probes", "minecart_counter", "completeness_testing", model_name
+    )
 
     with tqdm(total=len(layers), unit="layer") as pbar:
         for layer_i in layers:
-            cav_list: list[np.ndarray] = []
-            bias_list: list[float] = []
-            use_sigmoid: list[bool] = []
-            used_names: list[str] = []
-
-            probe_dir = (
-                "rl_tcav_data/concept_probes/minecart_counter/"
-                "completeness_testing/kind-cosmos-35/"
-            )
-            for fn in sorted(os.listdir(probe_dir)):
+            # --- ALL manual concepts ---
+            all_cavs = []
+            all_biases = []
+            all_names = []
+            all_sig = []
+            for fn in sorted(os.listdir(concept_probe_base)):
                 if not fn.endswith(f"_layer_{layer_i}_concept_probe.keras"):
                     continue
-                m = re.match(r"(.+)_layer_{}_concept_probe\.keras".format(layer_i), fn)
-                if not m:
-                    raise ValueError(f"Cannot parse concept name from {fn}")
-                used_names.append(m.group(1))
-
-                probe: Sequential = load_model(os.path.join(probe_dir, fn))  # type: ignore
+                name = fn[: fn.rfind(f"_layer_{layer_i}_concept_probe.keras")]
+                probe: Sequential = load_model(os.path.join(concept_probe_base, fn))  # type: ignore
                 w, b = probe.layers[0].get_weights()
-                cav_list.append(w.flatten())
-                bias_list.append(b.flatten()[0])
-                use_sigmoid.append(not fn.startswith("minecarts_n_"))
+                all_cavs.append(w.flatten())
+                # minecart biases are scalars
+                all_biases.append(b.flatten()[0])
+                # apply sigmoid unless concept is minecarts_n_
+                all_sig.append(not name.startswith("minecarts_n_"))
+                all_names.append(name)
+            all_cavs = np.stack(all_cavs)
+            all_biases = np.array(all_biases)
+            c_all = all_cavs.shape[0]
 
-            cavs = np.stack(cav_list)
-            biases = np.array(bias_list)
-            cav_n = cavs.shape[0]
-
-            Y_train = np.load(
-                "rl_ccm_data/obs_action_set/minecart_counter/kind-cosmos-35/"
-                "Y_all_q_train_8000_examples.npy"
-            )
-            Y_val = np.load(
-                "rl_ccm_data/obs_action_set/minecart_counter/kind-cosmos-35/"
-                "Y_all_q_val_2000_examples.npy"
-            )
-
-            ccm = CCM_DT(
+            # Train & evaluate on ALL concepts
+            ccm_all = CCM_DT(
                 num_classes=env.action_space.n,
                 model_activation_obtainer=mao,
                 X_train=X_train,
                 X_val=X_val,
-                Y_train=Y_train,
-                Y_val=Y_val,
+                Y_train=np.load(os.path.join(base_obs_path, "Y_all_q_train_8000_examples.npy")),
+                Y_val=np.load(os.path.join(base_obs_path, "Y_all_q_val_2000_examples.npy")),
                 all_q=True,
                 max_depth=3,
             )
-
-            score, dt_model = ccm.train_and_eval_ccm(
-                cavs=cavs,
+            score_all, dt_all = ccm_all.train_and_eval_ccm(
+                cavs=all_cavs,
                 conv_handling="flatten",
                 layer_i=layer_i,
-                use_sigmoid=use_sigmoid,
-                biases=biases,
+                use_sigmoid=all_sig,
+                biases=all_biases,
             )
-
-            results.append(
+            results_all.append(
                 {
                     "layer": layer_i,
-                    "c": cav_n,
+                    "c": c_all,
                     "target_type": "all_q",
                     "max_depth": 3,
-                    "completeness_score": score,
+                    "completeness_score": score_all,
                 }
             )
+            if score_all > best_all_score:
+                best_all_score = score_all
+                best_all_model = dt_all
+                best_all_params = {"layer": layer_i, "c": c_all}
+                best_all_names = all_names.copy()
 
-            if score > best_score:
-                best_score = score
-                best_model = dt_model
-                best_params = {"layer_i": layer_i}
-                best_cav_n = cav_n
-                best_used_names = used_names.copy()
+            # --- FILTERED manual concepts (score ≥ 0.5) ---
+            cavs_filt, names_filt = get_manual_cavs_and_names(
+                manual_concept_probe_path=concept_probe_base,
+                layer_i=layer_i,
+                environment_name="minecart_counter",
+                score_threshold=0.5,
+            )
+            biases_filt = []
+            sig_filt = []
+            for name in names_filt:
+                fn = f"{name}_layer_{layer_i}_concept_probe.keras"
+                probe = load_model(os.path.join(concept_probe_base, fn))  # type: ignore
+                _, b = probe.layers[0].get_weights()
+                biases_filt.append(b.flatten()[0])
+                sig_filt.append(not name.startswith("minecarts_n_"))
+            biases_filt = np.array(biases_filt)
+            c_filt = cavs_filt.shape[0]
+
+            ccm_filt = CCM_DT(
+                num_classes=env.action_space.n,
+                model_activation_obtainer=mao,
+                X_train=X_train,
+                X_val=X_val,
+                Y_train=np.load(os.path.join(base_obs_path, "Y_all_q_train_8000_examples.npy")),
+                Y_val=np.load(os.path.join(base_obs_path, "Y_all_q_val_2000_examples.npy")),
+                all_q=True,
+                max_depth=3,
+            )
+            score_filt, dt_filt = ccm_filt.train_and_eval_ccm(
+                cavs=cavs_filt,
+                conv_handling="flatten",
+                layer_i=layer_i,
+                use_sigmoid=sig_filt,
+                biases=biases_filt,
+            )
+            results_filtered.append(
+                {
+                    "layer": layer_i,
+                    "c": c_filt,
+                    "target_type": "all_q",
+                    "max_depth": 3,
+                    "completeness_score": score_filt,
+                }
+            )
+            if score_filt > best_filt_score:
+                best_filt_score = score_filt
+                best_filt_model = dt_filt
+                best_filt_params = {"layer": layer_i, "c": c_filt}
+                best_filt_names = names_filt.copy()
 
             pbar.update(1)
 
-    # save best DT
+    # Save only the best models for each set
     joblib.dump(
-        best_model,
+        best_all_model,
         os.path.join(
             save_path,
-            f"best_ccm_manual_layer_{best_params['layer_i']}"
-            f"_c_{best_cav_n}_all_q_max_depth_3.joblib",
+            f"best_manual_all_layer_{best_all_params['layer']}_c_{best_all_params['c']}_all_q_max_depth_3.joblib",
         ),
     )
-
-    # save concept names
     pd.DataFrame(
-        {"feature_index": list(range(len(best_used_names))), "concept_name": best_used_names}
-    ).to_csv(os.path.join(save_path, "manual_concepts_used_names_best_layer.csv"), index=False)
+        {
+            "feature_index": list(range(len(best_all_names))),
+            "concept_name": best_all_names,
+        }
+    ).to_csv(
+        os.path.join(save_path, "manual_concepts_used_names_best_all.csv"),
+        index=False,
+    )
 
-    # save all scores
-    pd.DataFrame(results).to_csv(
-        os.path.join(save_path, "manual_concepts_completeness_scores.csv"), index=False
+    joblib.dump(
+        best_filt_model,
+        os.path.join(
+            save_path,
+            f"best_manual_filtered_layer_{best_filt_params['layer']}_c_{best_filt_params['c']}_all_q_max_depth_3.joblib",
+        ),
+    )
+    pd.DataFrame(
+        {
+            "feature_index": list(range(len(best_filt_names))),
+            "concept_name": best_filt_names,
+        }
+    ).to_csv(
+        os.path.join(save_path, "manual_concepts_used_names_best_filtered.csv"),
+        index=False,
+    )
+
+    # Save results CSVs
+    pd.DataFrame(results_all).to_csv(
+        os.path.join(save_path, "manual_concepts_completeness_scores_all.csv"),
+        index=False,
+    )
+    pd.DataFrame(results_filtered).to_csv(
+        os.path.join(save_path, "manual_concepts_completeness_scores_filtered.csv"),
+        index=False,
     )
 
 
